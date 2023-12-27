@@ -5,7 +5,7 @@ import { getFailedJobs, getJobAnnotations } from './github'
 
 export async function run(): Promise<void> {
   try {
-    const fromWorkflowRun = core.getInput('workflow-run') === 'true'
+    const fromWorkflowRun = context.eventName === 'workflow_run'
     console.log(context)
     const runId = fromWorkflowRun
       ? parseInt(context.payload.workflow_run.id)

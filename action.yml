@@ -19,10 +19,6 @@ inputs:
   slack-webhook-url:
     description: 'Your Slack webhook url'
     required: true
-  from-workflow-run:
-    description: 'The workflow run that triggered this action'
-    required: false
-    default: 'false'
 
 # Define your outputs here.
 outputs:
