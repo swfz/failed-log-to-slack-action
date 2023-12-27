@@ -32696,33 +32696,43 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.notify = void 0;
 const github_1 = __nccwpck_require__(5438);
 const webhook_1 = __nccwpck_require__(1095);
-async function notify(webhookUrl, summary) {
-    const webhook = new webhook_1.IncomingWebhook(webhookUrl);
+function generateBlocks() {
+    const run = github_1.context.payload.workflow_run;
     const conclusion = github_1.context.payload.workflow_run.conclusion;
-    const workflowName = github_1.context.payload.workflow.name;
-    const user = github_1.context.payload.actor?.login;
-    const branch = github_1.context.payload.workflow_run.head_branch;
-    const eventName = github_1.context.payload.workflow_run.event;
+    const workflowName = run.name;
+    const user = run?.actor?.login;
+    const branch = run.head_branch;
+    const eventName = run.event;
+    const repoName = `<${github_1.context.payload.repository?.html_url}|${github_1.context.payload.repository?.full_name}>`;
+    const num = `<${run.html_url}|#${github_1.context.payload.workflow_run.run_number}>`;
+    const text = `
+${conclusion}: ${user}\`s \`${eventName}\` on \`${branch}\`
+Workflow: ${workflowName} ${num}
+`;
     const block = {
         type: 'section',
         text: {
             type: 'mrkdwn',
-            text: `${workflowName} ${conclusion} by ${user} in ${branch} at ${eventName}`
+            text
         }
     };
-    const blocks = blocksInAttachment(summary);
-    return await webhook.send({
-        blocks: [block],
-        attachments: [
+    const repoBlock = {
+        type: 'context',
+        elements: [
             {
-                color: '#a30200',
-                blocks
+                type: 'image',
+                image_url: 'https://github.githubassets.com/favicon.ico',
+                alt_text: 'GitHub'
+            },
+            {
+                type: 'mrkdwn',
+                text: `*${repoName}*`
             }
         ]
-    });
+    };
+    return [block, repoBlock];
 }
-exports.notify = notify;
-function blocksInAttachment(summary) {
+function generateBlocksInAttachment(summary) {
     return summary.flatMap(job => {
         const annotations = job.annotations.flatMap((a) => {
             const location = `*${a.path}: L${a.start_line}~L${a.end_line}*`;
@@ -32751,13 +32761,26 @@ function blocksInAttachment(summary) {
                 type: 'section',
                 text: {
                     type: 'mrkdwn',
-                    text: `${job.name} ${job.conclusion}`
+                    text: `Job: \`${job.name}\` ${job.conclusion}`
                 }
             },
             ...annotations
         ];
     });
 }
+async function notify(webhookUrl, summary) {
+    const webhook = new webhook_1.IncomingWebhook(webhookUrl);
+    return await webhook.send({
+        blocks: generateBlocks(),
+        attachments: [
+            {
+                color: '#a30200',
+                blocks: generateBlocksInAttachment(summary)
+            }
+        ]
+    });
+}
+exports.notify = notify;
 
 
 /***/ }),
