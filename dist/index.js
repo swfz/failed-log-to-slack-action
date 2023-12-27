@@ -32585,7 +32585,7 @@ function wrappy (fn, cb) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getJobAnnotations = exports.getFailedJobs = void 0;
+exports.getSummary = exports.getJobAnnotations = exports.getFailedJobs = void 0;
 const github_1 = __nccwpck_require__(5438);
 async function getFailedJobs(octokit, runId) {
     const { data } = await octokit.rest.actions.listJobsForWorkflowRun({
@@ -32607,6 +32607,14 @@ async function getJobAnnotations(octokit, job) {
     return data || [];
 }
 exports.getJobAnnotations = getJobAnnotations;
+async function getSummary(octokit, jobs) {
+    const summary = jobs.reduce(async (acc, job) => {
+        const annotations = await getJobAnnotations(octokit, job);
+        return [...(await acc), { ...job, annotations }];
+    }, Promise.resolve([]));
+    return summary;
+}
+exports.getSummary = getSummary;
 
 
 /***/ }),
@@ -32647,8 +32655,7 @@ const slack_1 = __nccwpck_require__(7501);
 const github_2 = __nccwpck_require__(978);
 async function run() {
     try {
-        const fromWorkflowRun = core.getInput('workflow-run') === 'true';
-        console.log(github_1.context);
+        const fromWorkflowRun = github_1.context.eventName === 'workflow_run';
         const runId = fromWorkflowRun
             ? parseInt(github_1.context.payload.workflow_run.id)
             : github_1.context.runId;
@@ -32665,11 +32672,9 @@ async function run() {
             return;
         }
         else {
-            for (const job of failedJobs) {
-                const annotations = await (0, github_2.getJobAnnotations)(octokit, job);
-                const result = await (0, slack_1.toChannel)(webhookUrl, job, annotations);
-                console.log(result);
-            }
+            const summary = await (0, github_2.getSummary)(octokit, failedJobs);
+            const result = await (0, slack_1.notify)(webhookUrl, summary);
+            console.log(result);
         }
     }
     catch (error) {
@@ -32688,42 +32693,94 @@ exports.run = run;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.toChannel = void 0;
+exports.notify = void 0;
 const github_1 = __nccwpck_require__(5438);
 const webhook_1 = __nccwpck_require__(1095);
-function generateBlocks(job) {
-    const workflowName = `[${job.workflow_name}](${job.html_url})`;
+function generateBlocks() {
+    const run = github_1.context.payload.workflow_run;
+    const conclusion = github_1.context.payload.workflow_run.conclusion;
+    const workflowName = run.name;
+    const user = run?.actor?.login;
+    const branch = run.head_branch;
+    const eventName = run.event;
+    const repoName = `<${github_1.context.payload.repository?.html_url}|${github_1.context.payload.repository?.full_name}>`;
+    const num = `<${run.html_url}|#${github_1.context.payload.workflow_run.run_number}>`;
     const text = `
-${job.name} ${job.conclusion} in ${workflowName} at ${github_1.context.eventName}
+${conclusion}: ${user}\`s \`${eventName}\` on \`${branch}\`
+Workflow: ${workflowName} ${num}
 `;
-    return [
-        {
-            type: 'section',
-            text: {
-                type: 'mrkdwn',
-                text
-            }
+    const block = {
+        type: 'section',
+        text: {
+            type: 'mrkdwn',
+            text
         }
-    ];
+    };
+    const repoBlock = {
+        type: 'context',
+        elements: [
+            {
+                type: 'image',
+                image_url: 'https://github.githubassets.com/favicon.ico',
+                alt_text: 'GitHub'
+            },
+            {
+                type: 'mrkdwn',
+                text: `*${repoName}*`
+            }
+        ]
+    };
+    return [block, repoBlock];
 }
-function generateAttachments(annotations) {
-    return annotations.map(a => {
-        const title = `*${a.path}: L${a.start_line}~L${a.end_line}*`;
-        return {
-            color: 'danger',
-            pretext: title,
-            text: `${a.message}`
-        };
+function generateBlocksInAttachment(summary) {
+    return summary.flatMap(job => {
+        const annotations = job.annotations.flatMap((a) => {
+            const location = `*${a.path}: L${a.start_line}~L${a.end_line}*`;
+            return [
+                {
+                    type: 'divider'
+                },
+                {
+                    type: 'section',
+                    text: {
+                        type: 'mrkdwn',
+                        text: location
+                    }
+                },
+                {
+                    type: 'section',
+                    text: {
+                        type: 'mrkdwn',
+                        text: `\`\`\`${a.message}\`\`\``
+                    }
+                }
+            ];
+        });
+        return [
+            {
+                type: 'section',
+                text: {
+                    type: 'mrkdwn',
+                    text: `Job: \`${job.name}\` ${job.conclusion}`
+                }
+            },
+            ...annotations
+        ];
     });
 }
-async function toChannel(webhookUrl, job, annotations) {
+async function notify(webhookUrl, summary) {
     const webhook = new webhook_1.IncomingWebhook(webhookUrl);
     return await webhook.send({
-        blocks: generateBlocks(job),
-        attachments: generateAttachments(annotations)
+        blocks: generateBlocks(),
+        attachments: [
+            {
+                color: '#a30200',
+                blocks: generateBlocksInAttachment(summary)
+            }
+        ]
     });
 }
-exports.toChannel = toChannel;
+exports.notify = notify;
 
 
 /***/ }),

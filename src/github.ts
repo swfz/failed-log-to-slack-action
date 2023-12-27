@@ -10,6 +10,7 @@ export type Jobs = GetResponseDataTypeFromEndpointMethod<
 export type Annotations = GetResponseDataTypeFromEndpointMethod<
   Octokit['rest']['checks']['listAnnotations']
 >
+export type Summary = Jobs[0] & { annotations: Annotations }
 
 export async function getFailedJobs(
   octokit: Octokit,
@@ -38,4 +39,19 @@ export async function getJobAnnotations(
   })
 
   return data || []
+}
+
+export async function getSummary(
+  octokit: Octokit,
+  jobs: Jobs
+): Promise<Summary[]> {
+  const summary = jobs.reduce(
+    async (acc, job) => {
+      const annotations = await getJobAnnotations(octokit, job)
+      return [...(await acc), { ...job, annotations }]
+    },
+    Promise.resolve([] as Summary[])
+  )
+
+  return summary
 }
