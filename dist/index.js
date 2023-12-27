@@ -32585,7 +32585,7 @@ function wrappy (fn, cb) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getJobAnnotations = exports.getFailedJobs = void 0;
+exports.getSummary = exports.getJobAnnotations = exports.getFailedJobs = void 0;
 const github_1 = __nccwpck_require__(5438);
 async function getFailedJobs(octokit, runId) {
     const { data } = await octokit.rest.actions.listJobsForWorkflowRun({
@@ -32607,6 +32607,14 @@ async function getJobAnnotations(octokit, job) {
     return data || [];
 }
 exports.getJobAnnotations = getJobAnnotations;
+async function getSummary(octokit, jobs) {
+    const summary = jobs.reduce(async (acc, job) => {
+        const annotations = await getJobAnnotations(octokit, job);
+        return [...(await acc), { ...job, annotations }];
+    }, Promise.resolve([]));
+    return summary;
+}
+exports.getSummary = getSummary;
 
 
 /***/ }),
@@ -32648,7 +32656,6 @@ const github_2 = __nccwpck_require__(978);
 async function run() {
     try {
         const fromWorkflowRun = github_1.context.eventName === 'workflow_run';
-        console.log(github_1.context);
         const runId = fromWorkflowRun
             ? parseInt(github_1.context.payload.workflow_run.id)
             : github_1.context.runId;
@@ -32665,11 +32672,9 @@ async function run() {
             return;
         }
         else {
-            for (const job of failedJobs) {
-                const annotations = await (0, github_2.getJobAnnotations)(octokit, job);
-                const result = await (0, slack_1.toChannel)(webhookUrl, job, annotations);
-                console.log(result);
-            }
+            const summary = await (0, github_2.getSummary)(octokit, failedJobs);
+            const result = await (0, slack_1.notify)(webhookUrl, summary);
+            console.log(result);
         }
     }
     catch (error) {
@@ -32688,42 +32693,71 @@ exports.run = run;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.toChannel = void 0;
+exports.notify = void 0;
 const github_1 = __nccwpck_require__(5438);
 const webhook_1 = __nccwpck_require__(1095);
-function generateBlocks(job) {
-    const workflowName = `[${job.workflow_name}](${job.html_url})`;
-    const text = `
-${job.name} ${job.conclusion} in ${workflowName} at ${github_1.context.eventName}
-`;
-    return [
-        {
-            type: 'section',
-            text: {
-                type: 'mrkdwn',
-                text
-            }
-        }
-    ];
-}
-function generateAttachments(annotations) {
-    return annotations.map(a => {
-        const title = `*${a.path}: L${a.start_line}~L${a.end_line}*`;
-        return {
-            color: 'danger',
-            pretext: title,
-            text: `${a.message}`
-        };
-    });
-}
-async function toChannel(webhookUrl, job, annotations) {
+async function notify(webhookUrl, summary) {
     const webhook = new webhook_1.IncomingWebhook(webhookUrl);
+    const conclusion = github_1.context.payload.workflow_run.conclusion;
+    const workflowName = github_1.context.payload.workflow.name;
+    const user = github_1.context.payload.actor?.login;
+    const branch = github_1.context.payload.workflow_run.head_branch;
+    const eventName = github_1.context.payload.workflow_run.event;
+    const block = {
+        type: 'section',
+        text: {
+            type: 'mrkdwn',
+            text: `${workflowName} ${conclusion} by ${user} in ${branch} at ${eventName}`
+        }
+    };
+    const blocks = blocksInAttachment(summary);
     return await webhook.send({
-        blocks: generateBlocks(job),
-        attachments: generateAttachments(annotations)
+        blocks: [block],
+        attachments: [
+            {
+                color: '#a30200',
+                blocks
+            }
+        ]
     });
 }
-exports.toChannel = toChannel;
+exports.notify = notify;
+function blocksInAttachment(summary) {
+    return summary.flatMap(job => {
+        const annotations = job.annotations.flatMap((a) => {
+            const location = `*${a.path}: L${a.start_line}~L${a.end_line}*`;
+            return [
+                {
+                    type: 'divider'
+                },
+                {
+                    type: 'section',
+                    text: {
+                        type: 'mrkdwn',
+                        text: location
+                    }
+                },
+                {
+                    type: 'section',
+                    text: {
+                        type: 'mrkdwn',
+                        text: `\`\`\`${a.message}\`\`\``
+                    }
+                }
+            ];
+        });
+        return [
+            {
+                type: 'section',
+                text: {
+                    type: 'mrkdwn',
+                    text: `${job.name} ${job.conclusion}`
+                }
+            },
+            ...annotations
+        ];
+    });
+}
 
 
 /***/ }),
