@@ -32652,7 +32652,6 @@ async function run() {
         const runId = fromWorkflowRun
             ? parseInt(github_1.context.payload.workflow_run.id)
             : github_1.context.runId;
-        // const runId = 7324487951
         const githubToken = process.env.INPUT_GITHUB_TOKEN ||
             core.getInput('github-token', { required: true });
         const webhookUrl = process.env.SLACK_WEBHOOK_URL ||
