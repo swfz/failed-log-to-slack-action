@@ -1,26 +1,40 @@
 import * as core from '@actions/core'
-import { wait } from './wait'
+import { context, getOctokit } from '@actions/github'
+import { toChannel } from './slack'
+import { getFailedJobs, getJobAnnotations } from './github'
 
-/**
- * The main function for the action.
- * @returns {Promise<void>} Resolves when the action is complete.
- */
 export async function run(): Promise<void> {
   try {
-    const ms: string = core.getInput('milliseconds')
+    const fromWorkflowRun = core.getInput('workflow-run') === 'true'
+    console.log(context)
+    const runId = fromWorkflowRun
+      ? parseInt(context.payload.workflow_run.id)
+      : context.runId
+    // const runId = 7324487951
 
-    // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-    core.debug(`Waiting ${ms} milliseconds ...`)
+    const githubToken =
+      process.env.INPUT_GITHUB_TOKEN ||
+      core.getInput('github-token', { required: true })
+    const webhookUrl =
+      process.env.SLACK_WEBHOOK_URL ||
+      core.getInput('slack-webhook-url', { required: true })
+    core.setSecret(githubToken)
+    core.setSecret(webhookUrl)
 
-    // Log the current timestamp, wait, then log the new timestamp
-    core.debug(new Date().toTimeString())
-    await wait(parseInt(ms, 10))
-    core.debug(new Date().toTimeString())
+    const octokit = getOctokit(githubToken)
+    const failedJobs = await getFailedJobs(octokit, runId)
 
-    // Set outputs for other workflow steps to use
-    core.setOutput('time', new Date().toTimeString())
+    if (failedJobs.length === 0) {
+      console.log('No failed jobs found.')
+      return
+    } else {
+      for (const job of failedJobs) {
+        const annotations = await getJobAnnotations(octokit, job)
+        const result = await toChannel(webhookUrl, job, annotations)
+        console.log(result)
+      }
+    }
   } catch (error) {
-    // Fail the workflow run if an error occurs
     if (error instanceof Error) core.setFailed(error.message)
   }
 }
