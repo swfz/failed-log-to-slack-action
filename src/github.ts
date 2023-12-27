@@ -1,4 +1,6 @@
 import { context, getOctokit } from '@actions/github'
+// TODO: workaround
+// eslint-disable-next-line import/no-unresolved
 import { GetResponseDataTypeFromEndpointMethod } from '@octokit/types'
 
 export type Octokit = ReturnType<typeof getOctokit>
