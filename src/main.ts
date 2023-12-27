@@ -1,12 +1,11 @@
 import * as core from '@actions/core'
 import { context, getOctokit } from '@actions/github'
-import { toChannel } from './slack'
-import { getFailedJobs, getJobAnnotations } from './github'
+import { notify } from './slack'
+import { getFailedJobs, getSummary } from './github'
 
 export async function run(): Promise<void> {
   try {
     const fromWorkflowRun = context.eventName === 'workflow_run'
-    console.log(context)
     const runId = fromWorkflowRun
       ? parseInt(context.payload.workflow_run.id)
       : context.runId
@@ -27,11 +26,9 @@ export async function run(): Promise<void> {
       console.log('No failed jobs found.')
       return
     } else {
-      for (const job of failedJobs) {
-        const annotations = await getJobAnnotations(octokit, job)
-        const result = await toChannel(webhookUrl, job, annotations)
-        console.log(result)
-      }
+      const summary = await getSummary(octokit, failedJobs)
+      const result = await notify(webhookUrl, summary)
+      console.log(result)
     }
   } catch (error) {
     if (error instanceof Error) core.setFailed(error.message)

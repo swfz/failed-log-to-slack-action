@@ -1,45 +1,75 @@
 import { context } from '@actions/github'
 import { IncomingWebhook, IncomingWebhookResult } from '@slack/webhook'
-import { MessageAttachment, SectionBlock } from '@slack/types'
-import { Jobs, Annotations } from './github'
+import { Block, SectionBlock } from '@slack/types'
+import { Annotations, Summary } from './github'
 
-function generateBlocks(job: Jobs[0]): SectionBlock[] {
-  const workflowName = `[${job.workflow_name}](${job.html_url})`
-
-  const text = `
-${job.name} ${job.conclusion} in ${workflowName} at ${context.eventName}
-`
-  return [
-    {
-      type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text
-      }
-    }
-  ]
-}
-
-function generateAttachments(annotations: Annotations): MessageAttachment[] {
-  return annotations.map(a => {
-    const title = `*${a.path}: L${a.start_line}~L${a.end_line}*`
-    return {
-      color: 'danger',
-      pretext: title,
-      text: `${a.message}`
-    }
-  })
-}
-
-export async function toChannel(
+export async function notify(
   webhookUrl: string,
-  job: Jobs[0],
-  annotations: Annotations
+  summary: Summary[]
 ): Promise<IncomingWebhookResult> {
   const webhook = new IncomingWebhook(webhookUrl)
 
+  const conclusion = context.payload.workflow_run.conclusion
+  const workflowName = context.payload.workflow.name
+  const user = context.payload.actor?.login
+  const branch = context.payload.workflow_run.head_branch
+  const eventName = context.payload.workflow_run.event
+
+  const block: SectionBlock = {
+    type: 'section',
+    text: {
+      type: 'mrkdwn',
+      text: `${workflowName} ${conclusion} by ${user} in ${branch} at ${eventName}`
+    }
+  }
+
+  const blocks = blocksInAttachment(summary)
+
   return await webhook.send({
-    blocks: generateBlocks(job),
-    attachments: generateAttachments(annotations)
+    blocks: [block],
+    attachments: [
+      {
+        color: '#a30200',
+        blocks
+      }
+    ]
+  })
+}
+
+function blocksInAttachment(summary: Summary[]): Block[] {
+  return summary.flatMap(job => {
+    const annotations = job.annotations.flatMap((a: Annotations[0]) => {
+      const location = `*${a.path}: L${a.start_line}~L${a.end_line}*`
+      return [
+        {
+          type: 'divider'
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: location
+          }
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `\`\`\`${a.message}\`\`\``
+          }
+        }
+      ]
+    })
+
+    return [
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `${job.name} ${job.conclusion}`
+        }
+      },
+      ...annotations
+    ]
   })
 }
