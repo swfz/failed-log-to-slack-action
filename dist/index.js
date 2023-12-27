@@ -32647,7 +32647,7 @@ const slack_1 = __nccwpck_require__(7501);
 const github_2 = __nccwpck_require__(978);
 async function run() {
     try {
-        const fromWorkflowRun = core.getInput('workflow-run') === 'true';
+        const fromWorkflowRun = github_1.context.eventName === 'workflow_run';
         console.log(github_1.context);
         const runId = fromWorkflowRun
             ? parseInt(github_1.context.payload.workflow_run.id)
