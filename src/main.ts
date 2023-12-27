@@ -10,7 +10,6 @@ export async function run(): Promise<void> {
     const runId = fromWorkflowRun
       ? parseInt(context.payload.workflow_run.id)
       : context.runId
-    // const runId = 7324487951
 
     const githubToken =
       process.env.INPUT_GITHUB_TOKEN ||
