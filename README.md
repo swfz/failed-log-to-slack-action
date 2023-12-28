@@ -171,14 +171,14 @@ Enter the actual values you want to use.
 export INPUT_GITHUB_TOKEN=xxxxx
 export SLACK_WEBHOOK_URL=xxxxx
 
-source script/dummy_event.sh ${fullRepoName} ${runId}
+source script/dev_env.sh https://github.com/{owner}/{repo}/actions/runs/{run_id}
 ```
 
 required `gh` command
 
-Identify the target RunID with gh run command, etc.
+Pass the URL of the github Workflow execution result to the script
 
-and pass it to the script as a set with the repository name.
+and set the environment variables necessary for development.
 
 ### simple execution
 
