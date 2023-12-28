@@ -11,6 +11,8 @@ run_id=$(echo "${url}" | grep --color=no -oP 'runs/\K\d+')
 
 res=$(gh run view -R "${repo}" "${run_id}" --json=event)
 
+event_name=$(echo "${res}" | jq -r '.event')
+
 export GITHUB_REPOSITORY=${repo}
 export GITHUB_RUN_ID=${run_id}
-export GITHUB_EVENT_NAME=$(echo "${res}" | jq -r '.event')
+export GITHUB_EVENT_NAME=${event_name}
