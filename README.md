@@ -176,7 +176,7 @@ source script/dev_env.sh https://github.com/{owner}/{repo}/actions/runs/{run_id}
 
 required `gh` command
 
-Pass the URL of the github Workflow execution result to the script
+Pass the URL of the GitHub Workflow execution result to the script
 
 and set the environment variables necessary for development.
 
