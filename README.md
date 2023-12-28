@@ -106,8 +106,6 @@ steps:
 For example workflow runs, check out the
 [Actions tab](https://github.com/actions/typescript-action/actions)! :rocket:
 
-
-
 ## Usage
 
 ### call by workflow configuration
