@@ -1,7 +1,12 @@
 import * as core from '@actions/core'
 import { context, getOctokit } from '@actions/github'
 import { notify } from './slack'
-import { getFailedJobs, getJobLogZip, getSummary } from './github'
+import {
+  getFailedJobs,
+  getJobLogZip,
+  getSummary,
+  getWorkflowRun
+} from './github'
 
 export async function run(): Promise<void> {
   try {
@@ -20,6 +25,7 @@ export async function run(): Promise<void> {
     core.setSecret(webhookUrl)
 
     const octokit = getOctokit(githubToken)
+    const workflowRun = await getWorkflowRun(octokit, runId)
     const failedJobs = await getFailedJobs(octokit, runId)
 
     await getJobLogZip(octokit, runId)
@@ -29,7 +35,7 @@ export async function run(): Promise<void> {
       return
     } else {
       const summary = await getSummary(octokit, failedJobs)
-      const result = await notify(webhookUrl, summary)
+      const result = await notify(webhookUrl, workflowRun, summary)
       console.log(result)
     }
   } catch (error) {

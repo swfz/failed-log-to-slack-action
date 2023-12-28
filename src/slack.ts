@@ -1,21 +1,17 @@
-import { context } from '@actions/github'
 import { IncomingWebhook, IncomingWebhookResult } from '@slack/webhook'
 import { Block, SectionBlock } from '@slack/types'
-import { Annotations, StepLog, Summary } from './github'
+import { Annotations, StepLog, Summary, WorkflowRun } from './github'
 
-function generateBlocks(): Block[] {
-  const run = context.payload.workflow_run
-
-  const conclusion = context.payload.workflow_run.conclusion
-  const workflowName = run.name
-  const user = run?.actor?.login
-  const branch = run.head_branch
-  const eventName = run.event
-  const repoName = `<${context.payload.repository?.html_url}|${context.payload.repository?.full_name}>`
-  const num = `<${run.html_url}|#${context.payload.workflow_run.run_number}>`
+function generateBlocks(workflowRun: WorkflowRun): Block[] {
+  const workflowName = workflowRun.name
+  const user = workflowRun.actor?.login
+  const branch = workflowRun.head_branch
+  const eventName = workflowRun.event
+  const repoName = `<${workflowRun.repository.html_url}|${workflowRun.repository.full_name}>`
+  const num = `<${workflowRun.html_url}|#${workflowRun.run_number}>`
 
   const text = `
-${conclusion}: ${user}\`s \`${eventName}\` on \`${branch}\`
+Failed: ${user}\`s \`${eventName}\` on \`${branch}\`
 Workflow: ${workflowName} ${num}
 `
 
@@ -117,12 +113,13 @@ function generateBlocksInAttachment(summary: Summary[]): Block[] {
 
 export async function notify(
   webhookUrl: string,
+  workflowRun: WorkflowRun,
   summary: Summary[]
 ): Promise<IncomingWebhookResult> {
   const webhook = new IncomingWebhook(webhookUrl)
 
   return await webhook.send({
-    blocks: generateBlocks(),
+    blocks: generateBlocks(workflowRun),
     attachments: [
       {
         color: '#a30200',

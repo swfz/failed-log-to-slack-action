@@ -35451,10 +35451,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getSummary = exports.getJobAnnotations = exports.getJobLog = exports.getJobLogZip = exports.getFailedJobs = void 0;
+exports.getSummary = exports.getJobAnnotations = exports.getJobLog = exports.getJobLogZip = exports.getFailedJobs = exports.getWorkflowRun = void 0;
 const github_1 = __nccwpck_require__(5438);
 const fs = __importStar(__nccwpck_require__(7147));
 const adm_zip_1 = __importDefault(__nccwpck_require__(6761));
+async function getWorkflowRun(octokit, runId) {
+    const { data } = await octokit.rest.actions.getWorkflowRun({
+        owner: github_1.context.repo.owner,
+        repo: github_1.context.repo.repo,
+        run_id: runId
+    });
+    return data;
+}
+exports.getWorkflowRun = getWorkflowRun;
 async function getFailedJobs(octokit, runId) {
     const { data } = await octokit.rest.actions.listJobsForWorkflowRun({
         owner: github_1.context.repo.owner,
@@ -35573,6 +35582,7 @@ async function run() {
         core.setSecret(githubToken);
         core.setSecret(webhookUrl);
         const octokit = (0, github_1.getOctokit)(githubToken);
+        const workflowRun = await (0, github_2.getWorkflowRun)(octokit, runId);
         const failedJobs = await (0, github_2.getFailedJobs)(octokit, runId);
         await (0, github_2.getJobLogZip)(octokit, runId);
         if (failedJobs.length === 0) {
@@ -35581,7 +35591,7 @@ async function run() {
         }
         else {
             const summary = await (0, github_2.getSummary)(octokit, failedJobs);
-            const result = await (0, slack_1.notify)(webhookUrl, summary);
+            const result = await (0, slack_1.notify)(webhookUrl, workflowRun, summary);
             console.log(result);
         }
     }
@@ -35602,19 +35612,16 @@ exports.run = run;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.notify = void 0;
-const github_1 = __nccwpck_require__(5438);
 const webhook_1 = __nccwpck_require__(1095);
-function generateBlocks() {
-    const run = github_1.context.payload.workflow_run;
-    const conclusion = github_1.context.payload.workflow_run.conclusion;
-    const workflowName = run.name;
-    const user = run?.actor?.login;
-    const branch = run.head_branch;
-    const eventName = run.event;
-    const repoName = `<${github_1.context.payload.repository?.html_url}|${github_1.context.payload.repository?.full_name}>`;
-    const num = `<${run.html_url}|#${github_1.context.payload.workflow_run.run_number}>`;
+function generateBlocks(workflowRun) {
+    const workflowName = workflowRun.name;
+    const user = workflowRun.actor?.login;
+    const branch = workflowRun.head_branch;
+    const eventName = workflowRun.event;
+    const repoName = `<${workflowRun.repository.html_url}|${workflowRun.repository.full_name}>`;
+    const num = `<${workflowRun.html_url}|#${workflowRun.run_number}>`;
     const text = `
-${conclusion}: ${user}\`s \`${eventName}\` on \`${branch}\`
+Failed: ${user}\`s \`${eventName}\` on \`${branch}\`
 Workflow: ${workflowName} ${num}
 `;
     const block = {
@@ -35705,10 +35712,10 @@ function generateBlocksInAttachment(summary) {
         ];
     });
 }
-async function notify(webhookUrl, summary) {
+async function notify(webhookUrl, workflowRun, summary) {
     const webhook = new webhook_1.IncomingWebhook(webhookUrl);
     return await webhook.send({
-        blocks: generateBlocks(),
+        blocks: generateBlocks(workflowRun),
         attachments: [
             {
                 color: '#a30200',

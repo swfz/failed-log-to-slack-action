@@ -6,6 +6,9 @@ import * as fs from 'fs'
 import admZip from 'adm-zip'
 
 export type Octokit = ReturnType<typeof getOctokit>
+export type WorkflowRun = GetResponseDataTypeFromEndpointMethod<
+  Octokit['rest']['actions']['getWorkflowRun']
+>
 export type Jobs = GetResponseDataTypeFromEndpointMethod<
   Octokit['rest']['actions']['listJobsForWorkflowRun']
 >['jobs']
@@ -20,6 +23,19 @@ export type Summary = Jobs[0] & {
   jobLog?: StepLog[]
 }
 export type StepLog = { log: string; stepName: string }
+
+export async function getWorkflowRun(
+  octokit: Octokit,
+  runId: number
+): Promise<WorkflowRun> {
+  const { data } = await octokit.rest.actions.getWorkflowRun({
+    owner: context.repo.owner,
+    repo: context.repo.repo,
+    run_id: runId
+  })
+
+  return data
+}
 
 export async function getFailedJobs(
   octokit: Octokit,
