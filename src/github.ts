@@ -74,14 +74,6 @@ export async function getJobLogZip(
   zip.extractAllTo(extractedDir, true)
 }
 
-function isDefaultErrorMessage(annotation: Annotations[0]): boolean {
-  return (
-    (annotation.path === '.github' &&
-      annotation.message?.startsWith('Process completed with exit code')) ||
-    false
-  )
-}
-
 export async function getJobLog(
   octokit: Octokit,
   job: Jobs[0]
@@ -122,14 +114,22 @@ export async function getJobLog(
   return logs || []
 }
 
+export function isDefaultErrorMessage(annotation: Annotations[0]): boolean {
+  return (
+    (annotation.path === '.github' &&
+      annotation.message?.startsWith('Process completed with exit code')) ||
+    false
+  )
+}
+
 export async function getJobAnnotations(
   octokit: Octokit,
-  job: Jobs[0]
+  jobId: number
 ): Promise<Annotations> {
   const { data } = await octokit.rest.checks.listAnnotations({
     owner: context.repo.owner,
     repo: context.repo.repo,
-    check_run_id: job.id
+    check_run_id: jobId
   })
 
   const excludeDefaultErrorAnnotations = data.filter(
@@ -145,7 +145,7 @@ export async function getSummary(
 ): Promise<Summary[]> {
   const summary = jobs.reduce(
     async (acc, job) => {
-      const annotations = await getJobAnnotations(octokit, job)
+      const annotations = await getJobAnnotations(octokit, job.id)
       if (annotations.length > 0) {
         return [...(await acc), { ...job, annotations }]
       } else {

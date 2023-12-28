@@ -50,7 +50,8 @@
     ],
     "testPathIgnorePatterns": [
       "/node_modules/",
-      "/dist/"
+      "/dist/",
+      "/src/mocks/"
     ],
     "transform": {
       "^.+\\.ts$": "ts-jest"
@@ -63,6 +64,9 @@
     "collectCoverage": true,
     "collectCoverageFrom": [
       "./src/**"
+    ],
+    "coveragePathIgnorePatterns": [
+      "<rootDir>/src/mocks/"
     ]
   },
   "dependencies": {
