@@ -35451,7 +35451,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getSummary = exports.getJobAnnotations = exports.getJobLog = exports.getJobLogZip = exports.getFailedJobs = exports.getWorkflowRun = void 0;
+exports.getSummary = exports.getJobAnnotations = exports.isDefaultErrorMessage = exports.getJobLog = exports.getJobLogZip = exports.getFailedJobs = exports.getWorkflowRun = void 0;
 const github_1 = __nccwpck_require__(5438);
 const fs = __importStar(__nccwpck_require__(7147));
 const path = __importStar(__nccwpck_require__(1017));
@@ -35488,11 +35488,6 @@ async function getJobLogZip(octokit, runId) {
     zip.extractAllTo(extractedDir, true);
 }
 exports.getJobLogZip = getJobLogZip;
-function isDefaultErrorMessage(annotation) {
-    return ((annotation.path === '.github' &&
-        annotation.message?.startsWith('Process completed with exit code')) ||
-        false);
-}
 async function getJobLog(octokit, job) {
     const failedSteps = job.steps?.filter(s => s.conclusion === 'failure');
     const logs = failedSteps?.map(s => {
@@ -35518,11 +35513,17 @@ async function getJobLog(octokit, job) {
     return logs || [];
 }
 exports.getJobLog = getJobLog;
-async function getJobAnnotations(octokit, job) {
+function isDefaultErrorMessage(annotation) {
+    return ((annotation.path === '.github' &&
+        annotation.message?.startsWith('Process completed with exit code')) ||
+        false);
+}
+exports.isDefaultErrorMessage = isDefaultErrorMessage;
+async function getJobAnnotations(octokit, jobId) {
     const { data } = await octokit.rest.checks.listAnnotations({
         owner: github_1.context.repo.owner,
         repo: github_1.context.repo.repo,
-        check_run_id: job.id
+        check_run_id: jobId
     });
     const excludeDefaultErrorAnnotations = data.filter(a => !isDefaultErrorMessage(a));
     return excludeDefaultErrorAnnotations;
@@ -35530,7 +35531,7 @@ async function getJobAnnotations(octokit, job) {
 exports.getJobAnnotations = getJobAnnotations;
 async function getSummary(octokit, jobs) {
     const summary = jobs.reduce(async (acc, job) => {
-        const annotations = await getJobAnnotations(octokit, job);
+        const annotations = await getJobAnnotations(octokit, job.id);
         if (annotations.length > 0) {
             return [...(await acc), { ...job, annotations }];
         }
