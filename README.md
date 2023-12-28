@@ -176,7 +176,9 @@ source script/dummy_event.sh ${fullRepoName} ${runId}
 
 required `gh` command
 
-Identify the target RunID with gh run command, etc., and pass it to the script as a set with the repository name.
+Identify the target RunID with gh run command, etc.
+
+and pass it to the script as a set with the repository name.
 
 ### simple execution
 
