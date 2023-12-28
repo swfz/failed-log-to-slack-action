@@ -32585,7 +32585,7 @@ function wrappy (fn, cb) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getSummary = exports.getJobAnnotations = exports.getFailedJobs = void 0;
+exports.getSummary = exports.getJobAnnotations = exports.getJobLog = exports.getFailedJobs = void 0;
 const github_1 = __nccwpck_require__(5438);
 async function getFailedJobs(octokit, runId) {
     const { data } = await octokit.rest.actions.listJobsForWorkflowRun({
@@ -32598,19 +32598,47 @@ async function getFailedJobs(octokit, runId) {
     return failedJobs || [];
 }
 exports.getFailedJobs = getFailedJobs;
+function isDefaultErrorMessage(annotation) {
+    return ((annotation.path === '.github' &&
+        annotation.message?.startsWith('Process completed with exit code')) ||
+        false);
+}
+async function getJobLog(octokit, job) {
+    const { data } = await octokit.rest.actions.downloadJobLogsForWorkflowRun({
+        owner: github_1.context.repo.owner,
+        repo: github_1.context.repo.repo,
+        job_id: job.id
+    });
+    // NOTE: remove like '2023-12-05T07:08:20.6282273Z ` string each lines
+    const lines = data
+        .split('\n')
+        .map(l => l.split(' ').slice(1).join(' '));
+    // NOTE: Logs of all steps are returned
+    // NOTE: Identify the location of the error from all logs
+    const errorIndex = lines.findIndex(l => l.startsWith('##[error]Process completed with exit code')) || lines.length;
+    return lines.slice(errorIndex - 30, errorIndex).join('\n');
+}
+exports.getJobLog = getJobLog;
 async function getJobAnnotations(octokit, job) {
     const { data } = await octokit.rest.checks.listAnnotations({
         owner: github_1.context.repo.owner,
         repo: github_1.context.repo.repo,
         check_run_id: job.id
     });
-    return data || [];
+    const excludeDefaultErrorAnnotations = data.filter(a => !isDefaultErrorMessage(a));
+    return excludeDefaultErrorAnnotations;
 }
 exports.getJobAnnotations = getJobAnnotations;
 async function getSummary(octokit, jobs) {
     const summary = jobs.reduce(async (acc, job) => {
         const annotations = await getJobAnnotations(octokit, job);
-        return [...(await acc), { ...job, annotations }];
+        if (annotations.length > 0) {
+            return [...(await acc), { ...job, annotations }];
+        }
+        else {
+            const jobLog = await getJobLog(octokit, job);
+            return [...(await acc), { ...job, jobLog }];
+        }
     }, Promise.resolve([]));
     return summary;
 }
@@ -32732,39 +32760,59 @@ Workflow: ${workflowName} ${num}
     };
     return [block, repoBlock];
 }
+function generateAnnotationBlocks(annotations) {
+    return annotations.flatMap((a) => {
+        const location = `*${a.path}: L${a.start_line}~L${a.end_line}*`;
+        return [
+            {
+                type: 'divider'
+            },
+            {
+                type: 'section',
+                text: {
+                    type: 'mrkdwn',
+                    text: location
+                }
+            },
+            {
+                type: 'section',
+                text: {
+                    type: 'mrkdwn',
+                    text: `\`\`\`${a.message}\`\`\``
+                }
+            }
+        ];
+    });
+}
+function generateJobLogBlock(jobLog) {
+    return [
+        {
+            type: 'divider'
+        },
+        {
+            type: 'section',
+            text: {
+                type: 'mrkdwn',
+                text: `\`\`\`${jobLog}\`\`\``
+            }
+        }
+    ];
+}
 function generateBlocksInAttachment(summary) {
     return summary.flatMap(job => {
-        const annotations = job.annotations.flatMap((a) => {
-            const location = `*${a.path}: L${a.start_line}~L${a.end_line}*`;
-            return [
-                {
-                    type: 'divider'
-                },
-                {
-                    type: 'section',
-                    text: {
-                        type: 'mrkdwn',
-                        text: location
-                    }
-                },
-                {
-                    type: 'section',
-                    text: {
-                        type: 'mrkdwn',
-                        text: `\`\`\`${a.message}\`\`\``
-                    }
-                }
-            ];
-        });
+        const lines = job.annotations
+            ? generateAnnotationBlocks(job.annotations)
+            : generateJobLogBlock(job.jobLog);
+        const jobName = `<${job.html_url}|${job.name}>`;
         return [
             {
                 type: 'section',
                 text: {
                     type: 'mrkdwn',
-                    text: `Job: \`${job.name}\` ${job.conclusion}`
+                    text: `Job: ${jobName} ${job.conclusion}`
                 }
             },
-            ...annotations
+            ...lines
         ];
     });
 }

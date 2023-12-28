@@ -10,7 +10,10 @@ export type Jobs = GetResponseDataTypeFromEndpointMethod<
 export type Annotations = GetResponseDataTypeFromEndpointMethod<
   Octokit['rest']['checks']['listAnnotations']
 >
-export type Summary = Jobs[0] & { annotations: Annotations }
+export type JobLog = GetResponseDataTypeFromEndpointMethod<
+  Octokit['rest']['actions']['downloadJobLogsForWorkflowRun']
+>
+export type Summary = Jobs[0] & { annotations?: Annotations; jobLog?: JobLog }
 
 export async function getFailedJobs(
   octokit: Octokit,
@@ -28,6 +31,39 @@ export async function getFailedJobs(
   return failedJobs || []
 }
 
+function isDefaultErrorMessage(annotation: Annotations[0]): boolean {
+  return (
+    (annotation.path === '.github' &&
+      annotation.message?.startsWith('Process completed with exit code')) ||
+    false
+  )
+}
+
+export async function getJobLog(
+  octokit: Octokit,
+  job: Jobs[0]
+): Promise<JobLog> {
+  const { data } = await octokit.rest.actions.downloadJobLogsForWorkflowRun({
+    owner: context.repo.owner,
+    repo: context.repo.repo,
+    job_id: job.id
+  })
+
+  // NOTE: remove like '2023-12-05T07:08:20.6282273Z ` string each lines
+  const lines = (data as string)
+    .split('\n')
+    .map(l => l.split(' ').slice(1).join(' '))
+
+  // NOTE: Logs of all steps are returned
+  // NOTE: Identify the location of the error from all logs
+  const errorIndex =
+    lines.findIndex(l =>
+      l.startsWith('##[error]Process completed with exit code')
+    ) || lines.length
+
+  return lines.slice(errorIndex - 30, errorIndex).join('\n')
+}
+
 export async function getJobAnnotations(
   octokit: Octokit,
   job: Jobs[0]
@@ -38,7 +74,11 @@ export async function getJobAnnotations(
     check_run_id: job.id
   })
 
-  return data || []
+  const excludeDefaultErrorAnnotations = data.filter(
+    a => !isDefaultErrorMessage(a)
+  )
+
+  return excludeDefaultErrorAnnotations
 }
 
 export async function getSummary(
@@ -48,7 +88,12 @@ export async function getSummary(
   const summary = jobs.reduce(
     async (acc, job) => {
       const annotations = await getJobAnnotations(octokit, job)
-      return [...(await acc), { ...job, annotations }]
+      if (annotations.length > 0) {
+        return [...(await acc), { ...job, annotations }]
+      } else {
+        const jobLog = await getJobLog(octokit, job)
+        return [...(await acc), { ...job, jobLog }]
+      }
     },
     Promise.resolve([] as Summary[])
   )
