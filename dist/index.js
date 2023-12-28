@@ -35458,6 +35458,7 @@ const path = __importStar(__nccwpck_require__(1017));
 const adm_zip_1 = __importDefault(__nccwpck_require__(6761));
 const LOG_DIR = 'logs';
 const LOG_ZIP_FILE = 'logs.zip';
+const LATEST_LINES = 30;
 async function getWorkflowRun(octokit, runId) {
     const { data } = await octokit.rest.actions.getWorkflowRun({
         owner: github_1.context.repo.owner,
@@ -35509,7 +35510,7 @@ async function getJobLog(octokit, job) {
                 .toString()
                 .split('\n')
                 .map(l => l.split(' ').slice(1).join(' '))
-                .slice(-30)
+                .slice(-LATEST_LINES)
                 .join('\n'),
             stepName: s.name
         };

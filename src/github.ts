@@ -27,6 +27,7 @@ export type StepLog = { log: string; stepName: string }
 
 const LOG_DIR = 'logs'
 const LOG_ZIP_FILE = 'logs.zip'
+const LATEST_LINES = 30
 
 export async function getWorkflowRun(
   octokit: Octokit,
@@ -112,7 +113,7 @@ export async function getJobLog(
         .toString()
         .split('\n')
         .map(l => l.split(' ').slice(1).join(' '))
-        .slice(-30)
+        .slice(-LATEST_LINES)
         .join('\n'),
       stepName: s.name
     }
