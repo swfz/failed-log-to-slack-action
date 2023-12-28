@@ -35454,7 +35454,10 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getSummary = exports.getJobAnnotations = exports.getJobLog = exports.getJobLogZip = exports.getFailedJobs = exports.getWorkflowRun = void 0;
 const github_1 = __nccwpck_require__(5438);
 const fs = __importStar(__nccwpck_require__(7147));
+const path = __importStar(__nccwpck_require__(1017));
 const adm_zip_1 = __importDefault(__nccwpck_require__(6761));
+const LOG_DIR = 'logs';
+const LOG_ZIP_FILE = 'logs.zip';
 async function getWorkflowRun(octokit, runId) {
     const { data } = await octokit.rest.actions.getWorkflowRun({
         owner: github_1.context.repo.owner,
@@ -35477,9 +35480,11 @@ async function getFailedJobs(octokit, runId) {
 exports.getFailedJobs = getFailedJobs;
 async function getJobLogZip(octokit, runId) {
     const res = await octokit.request(`GET /repos/${github_1.context.repo.owner}/${github_1.context.repo.repo}/actions/runs/${runId}/logs`);
-    fs.writeFileSync('logs.zip', Buffer.from(res.data));
-    const zip = new adm_zip_1.default('logs.zip');
-    zip.extractAllTo('./tmp', true);
+    const extractedDir = path.join(process.cwd(), LOG_DIR);
+    const zipFilePath = path.join(process.cwd(), LOG_ZIP_FILE);
+    fs.writeFileSync(zipFilePath, Buffer.from(res.data));
+    const zip = new adm_zip_1.default(zipFilePath);
+    zip.extractAllTo(extractedDir, true);
 }
 exports.getJobLogZip = getJobLogZip;
 function isDefaultErrorMessage(annotation) {
@@ -35491,7 +35496,12 @@ async function getJobLog(octokit, job) {
     const failedSteps = job.steps?.filter(s => s.conclusion === 'failure');
     const logs = failedSteps?.map(s => {
         const sanitizedJobName = job.name.replaceAll('/', '');
-        const logFile = fs.readFileSync(`./tmp/${sanitizedJobName}/${s.number}_${s.name}.txt`);
+        const baseDir = path.join(process.cwd(), LOG_DIR);
+        const normalizedPath = path.normalize(path.join(process.cwd(), LOG_DIR, sanitizedJobName, `${s.number}_${s.name}.txt`));
+        if (!normalizedPath.startsWith(baseDir)) {
+            throw new Error('Invalid path');
+        }
+        const logFile = fs.readFileSync(normalizedPath);
         // NOTE: remove like '2023-12-05T07:08:20.6282273Z ` string each lines
         // NOTE: laltest 30 lines
         return {
