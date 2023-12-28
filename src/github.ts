@@ -3,9 +3,13 @@ import { context, getOctokit } from '@actions/github'
 // eslint-disable-next-line import/no-unresolved
 import { GetResponseDataTypeFromEndpointMethod } from '@octokit/types'
 import * as fs from 'fs'
+import * as path from 'path'
 import admZip from 'adm-zip'
 
 export type Octokit = ReturnType<typeof getOctokit>
+export type WorkflowRun = GetResponseDataTypeFromEndpointMethod<
+  Octokit['rest']['actions']['getWorkflowRun']
+>
 export type Jobs = GetResponseDataTypeFromEndpointMethod<
   Octokit['rest']['actions']['listJobsForWorkflowRun']
 >['jobs']
@@ -20,6 +24,23 @@ export type Summary = Jobs[0] & {
   jobLog?: StepLog[]
 }
 export type StepLog = { log: string; stepName: string }
+
+const LOG_DIR = 'logs'
+const LOG_ZIP_FILE = 'logs.zip'
+const LATEST_LINES = 30
+
+export async function getWorkflowRun(
+  octokit: Octokit,
+  runId: number
+): Promise<WorkflowRun> {
+  const { data } = await octokit.rest.actions.getWorkflowRun({
+    owner: context.repo.owner,
+    repo: context.repo.repo,
+    run_id: runId
+  })
+
+  return data
+}
 
 export async function getFailedJobs(
   octokit: Octokit,
@@ -45,9 +66,12 @@ export async function getJobLogZip(
     `GET /repos/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}/logs`
   )
 
-  fs.writeFileSync('logs.zip', Buffer.from(res.data))
-  const zip = new admZip('logs.zip')
-  zip.extractAllTo('./tmp', true)
+  const extractedDir = path.join(process.cwd(), LOG_DIR)
+  const zipFilePath = path.join(process.cwd(), LOG_ZIP_FILE)
+
+  fs.writeFileSync(zipFilePath, Buffer.from(res.data))
+  const zip = new admZip(zipFilePath)
+  zip.extractAllTo(extractedDir, true)
 }
 
 function isDefaultErrorMessage(annotation: Annotations[0]): boolean {
@@ -65,9 +89,22 @@ export async function getJobLog(
   const failedSteps = job.steps?.filter(s => s.conclusion === 'failure')
   const logs = failedSteps?.map(s => {
     const sanitizedJobName = job.name.replaceAll('/', '')
-    const logFile = fs.readFileSync(
-      `./tmp/${sanitizedJobName}/${s.number}_${s.name}.txt`
+
+    const baseDir = path.join(process.cwd(), LOG_DIR)
+    const normalizedPath = path.normalize(
+      path.join(
+        process.cwd(),
+        LOG_DIR,
+        sanitizedJobName,
+        `${s.number}_${s.name}.txt`
+      )
     )
+
+    if (!normalizedPath.startsWith(baseDir)) {
+      throw new Error('Invalid path')
+    }
+
+    const logFile = fs.readFileSync(normalizedPath)
 
     // NOTE: remove like '2023-12-05T07:08:20.6282273Z ` string each lines
     // NOTE: laltest 30 lines
@@ -76,7 +113,7 @@ export async function getJobLog(
         .toString()
         .split('\n')
         .map(l => l.split(' ').slice(1).join(' '))
-        .slice(-30)
+        .slice(-LATEST_LINES)
         .join('\n'),
       stepName: s.name
     }

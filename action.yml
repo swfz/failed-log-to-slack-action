@@ -1,18 +1,14 @@
-name: 'The name of your action here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'Actions Failed Log to Slack'
+description: 'GitHub Actions to notify Slack of the contents of the log of failed jobs in GitHub Actions.'
+author: 'swfz'
 
 # Add your action's branding here. This will appear on the GitHub Marketplace.
 branding:
-  icon: 'heart'
+  icon: 'alert-octagon'
   color: 'red'
 
 # Define your inputs here.
 inputs:
-  milliseconds:
-    description: 'Your input description here'
-    required: true
-    default: '1000'
   github-token:
     description: 'You must manually pass in secrets.GITHUB_TOKEN'
     required: true
@@ -21,9 +17,9 @@ inputs:
     required: true
 
 # Define your outputs here.
-outputs:
-  time:
-    description: 'Your output description here'
+# outputs:
+#  time:
+#    description: 'Your output description here'
 
 runs:
   using: node20
