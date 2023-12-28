@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import { context, getOctokit } from '@actions/github'
 import { notify } from './slack'
-import { getFailedJobs, getSummary } from './github'
+import { getFailedJobs, getJobLogZip, getSummary } from './github'
 
 export async function run(): Promise<void> {
   try {
@@ -21,6 +21,8 @@ export async function run(): Promise<void> {
 
     const octokit = getOctokit(githubToken)
     const failedJobs = await getFailedJobs(octokit, runId)
+
+    await getJobLogZip(octokit, runId)
 
     if (failedJobs.length === 0) {
       console.log('No failed jobs found.')

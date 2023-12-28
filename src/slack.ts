@@ -1,7 +1,7 @@
 import { context } from '@actions/github'
 import { IncomingWebhook, IncomingWebhookResult } from '@slack/webhook'
 import { Block, SectionBlock } from '@slack/types'
-import { Annotations, JobLog, Summary } from './github'
+import { Annotations, StepLog, Summary } from './github'
 
 function generateBlocks(): Block[] {
   const run = context.payload.workflow_run
@@ -70,26 +70,35 @@ function generateAnnotationBlocks(annotations: Annotations): Block[] {
   })
 }
 
-function generateJobLogBlock(jobLog: JobLog): (Block | SectionBlock)[] {
-  return [
-    {
-      type: 'divider'
-    },
-    {
-      type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: `\`\`\`${jobLog}\`\`\``
+function generateJobLogBlock(jobLog: StepLog[]): (Block | SectionBlock)[] {
+  return jobLog.flatMap((log: StepLog) => {
+    return [
+      {
+        type: 'divider'
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `Step: \`${log.stepName}\``
+        }
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `\`\`\`${log.log}\`\`\``
+        }
       }
-    }
-  ]
+    ]
+  })
 }
 
 function generateBlocksInAttachment(summary: Summary[]): Block[] {
   return summary.flatMap(job => {
     const lines = job.annotations
       ? generateAnnotationBlocks(job.annotations)
-      : generateJobLogBlock(job.jobLog)
+      : generateJobLogBlock(job.jobLog || [])
 
     const jobName = `<${job.html_url}|${job.name}>`
 
