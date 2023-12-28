@@ -229,6 +229,37 @@ following steps:
    to the remote repository. From here, you will need to create a new release in
    GitHub and users can easily reference the new tag in their workflows.
 
+## How to use
+
+### workflow_run trigger
+
+- .github/workflows/slack.yml
+
+```yaml
+name: slack notification
+
+on:
+  workflow_run:
+    workflows:
+      - ci
+      - analysis
+    types:
+      - completed
+jobs:
+  main:
+    name: main
+    runs-on: ubuntu-latest
+    steps:
+      - uses: swfz/failed-log-to-slack-action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+```
+
+`ci`,`analysis` is other workflow name
+
+run this workflow is there workflow completed
+
 ## Development
 
 Enter the actual values you want to use.
