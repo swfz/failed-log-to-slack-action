@@ -1,7 +1,7 @@
 import { context } from '@actions/github'
 import { IncomingWebhook, IncomingWebhookResult } from '@slack/webhook'
 import { Block, SectionBlock } from '@slack/types'
-import { Annotations, Summary } from './github'
+import { Annotations, JobLog, Summary } from './github'
 
 function generateBlocks(): Block[] {
   const run = context.payload.workflow_run
@@ -45,40 +45,63 @@ Workflow: ${workflowName} ${num}
   return [block, repoBlock]
 }
 
+function generateAnnotationBlocks(annotations: Annotations): Block[] {
+  return annotations.flatMap((a: Annotations[0]) => {
+    const location = `*${a.path}: L${a.start_line}~L${a.end_line}*`
+    return [
+      {
+        type: 'divider'
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: location
+        }
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `\`\`\`${a.message}\`\`\``
+        }
+      }
+    ]
+  })
+}
+
+function generateJobLogBlock(jobLog: JobLog): (Block | SectionBlock)[] {
+  return [
+    {
+      type: 'divider'
+    },
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `\`\`\`${jobLog}\`\`\``
+      }
+    }
+  ]
+}
+
 function generateBlocksInAttachment(summary: Summary[]): Block[] {
   return summary.flatMap(job => {
-    const annotations = job.annotations.flatMap((a: Annotations[0]) => {
-      const location = `*${a.path}: L${a.start_line}~L${a.end_line}*`
-      return [
-        {
-          type: 'divider'
-        },
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: location
-          }
-        },
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: `\`\`\`${a.message}\`\`\``
-          }
-        }
-      ]
-    })
+    const lines = job.annotations
+      ? generateAnnotationBlocks(job.annotations)
+      : generateJobLogBlock(job.jobLog)
+
+    const jobName = `<${job.html_url}|${job.name}>`
 
     return [
       {
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: `Job: \`${job.name}\` ${job.conclusion}`
+          text: `Job: ${jobName} ${job.conclusion}`
         }
       },
-      ...annotations
+      ...lines
     ]
   })
 }
