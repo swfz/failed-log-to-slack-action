@@ -1,7 +1,7 @@
 import { setupServer } from 'msw/node'
 import { handlers } from '../src/mocks/handler'
 import { getOctokit } from '@actions/github'
-import { getFailedJobs, getJobAnnotations } from '../src/github'
+import { getFailedJobs, getJobAnnotations, getWorkflowRun } from '../src/github'
 
 const server = setupServer(...handlers)
 
@@ -13,6 +13,12 @@ describe('github', () => {
     server.close()
   })
   const octokit = getOctokit('dummy', { request: fetch })
+
+  it('getWorkflowRun', async () => {
+    const workflowRun = await getWorkflowRun(octokit, 1)
+
+    expect(workflowRun.id).toEqual(30433642)
+  })
 
   it('failedJobs has one', async () => {
     const failedJobs = await getFailedJobs(octokit, 1)

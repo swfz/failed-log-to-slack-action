@@ -1,4 +1,5 @@
 import { http, HttpResponse } from 'msw'
+import workflowRun from './workflow_run.json'
 
 export const handlers = [
   http.get(
@@ -65,7 +66,7 @@ piyo
     }
   ),
   http.get('https://api.github.com/repos/*/*/actions/runs/*', () => {
-    return HttpResponse.json({ workflowRun: true })
+    return HttpResponse.json(workflowRun)
   }),
   http.get('https://api.github.com/*', () => {
     return HttpResponse.json({ mocked: true })
