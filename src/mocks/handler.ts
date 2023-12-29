@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw'
-import workflowRun from './workflow_run.json'
+import workflowRun from './responses/workflow_run.json'
 
 export const handlers = [
   http.get(
