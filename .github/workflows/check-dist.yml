@@ -37,7 +37,7 @@ jobs:
 
       - name: Install Dependencies
         id: install
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       - name: Build dist/ Directory
         id: build
