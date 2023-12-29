@@ -108,7 +108,7 @@ export async function getJobLog(
 
     const logFile = fs.readFileSync(normalizedPath)
 
-   return {
+    return {
       log: formatLog(logFile.toString()),
       stepName: s.name
     }

@@ -1,7 +1,12 @@
 import { setupServer } from 'msw/node'
 import { handlers } from '../src/mocks/handler'
 import { getOctokit } from '@actions/github'
-import { formatLog, getFailedJobs, getJobAnnotations, getWorkflowRun } from '../src/github'
+import {
+  formatLog,
+  getFailedJobs,
+  getJobAnnotations,
+  getWorkflowRun
+} from '../src/github'
 
 const server = setupServer(...handlers)
 

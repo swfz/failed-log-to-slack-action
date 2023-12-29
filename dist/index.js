@@ -35451,7 +35451,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getSummary = exports.getJobAnnotations = exports.isDefaultErrorMessage = exports.getJobLog = exports.getJobLogZip = exports.getFailedJobs = exports.getWorkflowRun = void 0;
+exports.getSummary = exports.getJobAnnotations = exports.isDefaultErrorMessage = exports.getJobLog = exports.formatLog = exports.getJobLogZip = exports.getFailedJobs = exports.getWorkflowRun = void 0;
 const github_1 = __nccwpck_require__(5438);
 const fs = __importStar(__nccwpck_require__(7147));
 const path = __importStar(__nccwpck_require__(1017));
@@ -35488,6 +35488,16 @@ async function getJobLogZip(octokit, runId) {
     zip.extractAllTo(extractedDir, true);
 }
 exports.getJobLogZip = getJobLogZip;
+// NOTE: remove like '2023-12-05T07:08:20.6282273Z ` string each lines
+// NOTE: laltest 30 lines
+function formatLog(log) {
+    return log
+        .split('\n')
+        .map(l => l.split(' ').slice(1).join(' '))
+        .slice(-LATEST_LINES)
+        .join('\n');
+}
+exports.formatLog = formatLog;
 async function getJobLog(octokit, job) {
     const failedSteps = job.steps?.filter(s => s.conclusion === 'failure');
     const logs = failedSteps?.map(s => {
@@ -35498,15 +35508,8 @@ async function getJobLog(octokit, job) {
             throw new Error('Invalid path');
         }
         const logFile = fs.readFileSync(normalizedPath);
-        // NOTE: remove like '2023-12-05T07:08:20.6282273Z ` string each lines
-        // NOTE: laltest 30 lines
         return {
-            log: logFile
-                .toString()
-                .split('\n')
-                .map(l => l.split(' ').slice(1).join(' '))
-                .slice(-LATEST_LINES)
-                .join('\n'),
+            log: formatLog(logFile.toString()),
             stepName: s.name
         };
     });
