@@ -74,6 +74,16 @@ export async function getJobLogZip(
   zip.extractAllTo(extractedDir, true)
 }
 
+// NOTE: remove like '2023-12-05T07:08:20.6282273Z ` string each lines
+// NOTE: laltest 30 lines
+export function formatLog(log: string): string {
+  return log
+    .split('\n')
+    .map(l => l.split(' ').slice(1).join(' '))
+    .slice(-LATEST_LINES)
+    .join('\n')
+}
+
 export async function getJobLog(
   octokit: Octokit,
   job: Jobs[0]
@@ -98,15 +108,8 @@ export async function getJobLog(
 
     const logFile = fs.readFileSync(normalizedPath)
 
-    // NOTE: remove like '2023-12-05T07:08:20.6282273Z ` string each lines
-    // NOTE: laltest 30 lines
     return {
-      log: logFile
-        .toString()
-        .split('\n')
-        .map(l => l.split(' ').slice(1).join(' '))
-        .slice(-LATEST_LINES)
-        .join('\n'),
+      log: formatLog(logFile.toString()),
       stepName: s.name
     }
   })
