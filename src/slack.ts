@@ -2,7 +2,7 @@ import { IncomingWebhook, IncomingWebhookResult } from '@slack/webhook'
 import { Block, SectionBlock } from '@slack/types'
 import { Annotations, StepLog, Summary, WorkflowRun } from './github'
 
-function generateBlocks(workflowRun: WorkflowRun): Block[] {
+export function generateBlocks(workflowRun: WorkflowRun): Block[] {
   const workflowName = workflowRun.name
   const user = workflowRun.actor?.login
   const branch = workflowRun.head_branch

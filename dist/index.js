@@ -35626,7 +35626,7 @@ exports.run = run;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.notify = void 0;
+exports.notify = exports.generateBlocks = void 0;
 const webhook_1 = __nccwpck_require__(1095);
 function generateBlocks(workflowRun) {
     const workflowName = workflowRun.name;
@@ -35662,6 +35662,7 @@ Workflow: ${workflowName} ${num}
     };
     return [block, repoBlock];
 }
+exports.generateBlocks = generateBlocks;
 function generateAnnotationBlocks(annotations) {
     return annotations.flatMap((a) => {
         const location = `*${a.path}: L${a.start_line}~L${a.end_line}*`;
