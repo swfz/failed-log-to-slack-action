@@ -1,0 +1,12 @@
+{
+  "path": "tests/hoge.tsx",
+  "start_line": 100,
+  "end_line": 100,
+  "start_column": null,
+  "end_column": null,
+  "annotation_level": "failure",
+  "title": "test in hoge fuga",
+  "message": "expect(recieved).toMatchSnapchot()\n\nSnapshot name: tests in hoge\n\n- Snapshot - 0\n+ Received + 3\n",
+  "raw_details": "",
+  "blob_href": "https://api.github.com/repos/github/rest-api-description/git/blobs/tests/hoge.tsx"
+}
