@@ -1,0 +1,12 @@
+{
+  "path": ".github",
+  "start_line": 100,
+  "end_line": 100,
+  "start_column": null,
+  "end_column": null,
+  "annotation_level": "failure",
+  "title": "",
+  "message": "Process completed with exit code 1.",
+  "raw_details": "",
+  "blob_href": "https://api.github.com/repos/github/rest-api-description/git/blobs/.github"
+}

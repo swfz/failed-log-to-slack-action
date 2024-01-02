@@ -2,8 +2,8 @@ import { context, getOctokit } from '@actions/github'
 // TODO: workaround
 // eslint-disable-next-line import/no-unresolved
 import { GetResponseDataTypeFromEndpointMethod } from '@octokit/types'
-import * as fs from 'fs'
-import * as path from 'path'
+import fs from 'fs'
+import path from 'path'
 import admZip from 'adm-zip'
 
 export type Octokit = ReturnType<typeof getOctokit>

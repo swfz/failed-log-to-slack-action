@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
 import { context, getOctokit } from '@actions/github'
-import { notify } from './slack'
+import { generateParams, notify } from './slack'
 import {
   getFailedJobs,
   getJobLogZip,
@@ -35,7 +35,10 @@ export async function run(): Promise<void> {
       return
     } else {
       const summary = await getSummary(octokit, failedJobs)
-      const result = await notify(webhookUrl, workflowRun, summary)
+      const result = await notify(
+        webhookUrl,
+        generateParams(workflowRun, summary)
+      )
       console.log(result)
     }
   } catch (error) {

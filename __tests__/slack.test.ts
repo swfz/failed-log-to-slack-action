@@ -35,5 +35,6 @@ describe('slack', () => {
     })
 
     expect(blocks).toHaveLength(2)
+    expect(blocks[0]?.text?.text).toContain('Workflow: test-workflow')
   })
 })

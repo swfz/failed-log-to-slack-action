@@ -2,11 +2,17 @@ import { setupServer } from 'msw/node'
 import { handlers } from '../src/mocks/handler'
 import { getOctokit } from '@actions/github'
 import {
+  Jobs,
   formatLog,
   getFailedJobs,
   getJobAnnotations,
+  getJobLog,
+  getJobLogZip,
   getWorkflowRun
 } from '../src/github'
+import runJobs from '../src/mocks/responses/runs_jobs.json'
+
+import fs from 'fs'
 
 const server = setupServer(...handlers)
 
@@ -110,5 +116,45 @@ line29
 line30
 line31
 [info] log end`)
+  })
+
+  it('download zip and get log', async () => {
+    const doesFileExist = (filePath: string): boolean => {
+      return fs.existsSync(filePath)
+    }
+
+    await getJobLogZip(octokit, 1)
+    expect(doesFileExist('logs/build/4_build.txt')).toBe(true)
+
+    const jobs = runJobs.jobs as Jobs
+
+    const stepLogs = await getJobLog(octokit, {
+      ...jobs[0],
+      name: 'test',
+      steps: [
+        {
+          name: 'Run actionsetup-node',
+          number: 3,
+          conclusion: 'success',
+          status: 'completed',
+          completed_at: '2023-12-30T09:01:00Z',
+          started_at: '2023-12-30T09:00:00Z'
+        },
+        {
+          name: 'test',
+          number: 4,
+          conclusion: 'failure',
+          status: 'completed',
+          completed_at: '2023-12-30T09:01:00Z',
+          started_at: '2023-12-30T09:00:00Z'
+        }
+      ]
+    })
+
+    expect(stepLogs).toHaveLength(1)
+    expect(stepLogs[0].stepName).toEqual('test')
+
+    const firstLine = stepLogs[0].log.split('\n')[0]
+    expect(firstLine).toEqual(`PASS src/components/__tests__/line.tsx`)
   })
 })

@@ -1,5 +1,9 @@
 import { http, HttpResponse } from 'msw'
 import workflowRun from './responses/workflow_run.json'
+import annotationDefault from './responses/check_run_annotation-default.json'
+import annotationMultiline from './responses/check_run_annotation-multiline.json'
+import fs from 'fs'
+import path from 'path'
 
 export const handlers = [
   http.get(
@@ -7,30 +11,7 @@ export const handlers = [
     ({ params }) => {
       // params[2]: check_run_id
       const annotations =
-        params[2] === '1'
-          ? [
-              {
-                annotation_level: 'failure',
-                path: 'path/to/file',
-                start_line: 1,
-                end_line: 1,
-                title: 'Some annotation',
-                message: `
-hoge
-fuga
-piyo
-`
-              },
-              {
-                path: '.github',
-                annotation_level: 'failure',
-                start_line: 300,
-                end_line: 300,
-                title: 'hoge',
-                message: 'Process completed with exit code 1.'
-              }
-            ]
-          : []
+        params[2] === '1' ? [annotationMultiline, annotationDefault] : []
 
       return HttpResponse.json(annotations)
     }
@@ -65,6 +46,18 @@ piyo
       return HttpResponse.json({ jobs })
     }
   ),
+  http.get('https://api.github.com/repos/*/*/actions/runs/*/logs', () => {
+    const buffer = fs.readFileSync(
+      path.resolve(process.cwd(), './src/mocks/responses/failed_log.zip')
+    )
+
+    return HttpResponse.arrayBuffer(buffer, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/zip'
+      }
+    })
+  }),
   http.get('https://api.github.com/repos/*/*/actions/runs/*', () => {
     return HttpResponse.json(workflowRun)
   }),
