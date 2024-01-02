@@ -1,4 +1,8 @@
-import { IncomingWebhook, IncomingWebhookResult } from '@slack/webhook'
+import {
+  IncomingWebhook,
+  IncomingWebhookResult,
+  IncomingWebhookSendArguments
+} from '@slack/webhook'
 import { Block, ContextBlock, SectionBlock } from '@slack/types'
 import { Annotations, StepLog, Summary, WorkflowRun } from './github'
 
@@ -113,14 +117,11 @@ function generateBlocksInAttachment(summary: Summary[]): Block[] {
   })
 }
 
-export async function notify(
-  webhookUrl: string,
+export function generateParams(
   workflowRun: WorkflowRun,
   summary: Summary[]
-): Promise<IncomingWebhookResult> {
-  const webhook = new IncomingWebhook(webhookUrl)
-
-  return await webhook.send({
+): IncomingWebhookSendArguments {
+  return {
     blocks: generateBlocks(workflowRun),
     attachments: [
       {
@@ -128,5 +129,14 @@ export async function notify(
         blocks: generateBlocksInAttachment(summary)
       }
     ]
-  })
+  }
+}
+
+export async function notify(
+  webhookUrl: string,
+  params: IncomingWebhookSendArguments
+): Promise<IncomingWebhookResult> {
+  const webhook = new IncomingWebhook(webhookUrl)
+
+  return await webhook.send(params)
 }

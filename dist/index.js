@@ -35424,37 +35424,14 @@ function wrappy (fn, cb) {
 
 "use strict";
 
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getSummary = exports.getJobAnnotations = exports.isDefaultErrorMessage = exports.getJobLog = exports.formatLog = exports.getJobLogZip = exports.getFailedJobs = exports.getWorkflowRun = void 0;
 const github_1 = __nccwpck_require__(5438);
-const fs = __importStar(__nccwpck_require__(7147));
-const path = __importStar(__nccwpck_require__(1017));
+const fs_1 = __importDefault(__nccwpck_require__(7147));
+const path_1 = __importDefault(__nccwpck_require__(1017));
 const adm_zip_1 = __importDefault(__nccwpck_require__(6761));
 const LOG_DIR = 'logs';
 const LOG_ZIP_FILE = 'logs.zip';
@@ -35481,9 +35458,9 @@ async function getFailedJobs(octokit, runId) {
 exports.getFailedJobs = getFailedJobs;
 async function getJobLogZip(octokit, runId) {
     const res = await octokit.request(`GET /repos/${github_1.context.repo.owner}/${github_1.context.repo.repo}/actions/runs/${runId}/logs`);
-    const extractedDir = path.join(process.cwd(), LOG_DIR);
-    const zipFilePath = path.join(process.cwd(), LOG_ZIP_FILE);
-    fs.writeFileSync(zipFilePath, Buffer.from(res.data));
+    const extractedDir = path_1.default.join(process.cwd(), LOG_DIR);
+    const zipFilePath = path_1.default.join(process.cwd(), LOG_ZIP_FILE);
+    fs_1.default.writeFileSync(zipFilePath, Buffer.from(res.data));
     const zip = new adm_zip_1.default(zipFilePath);
     zip.extractAllTo(extractedDir, true);
 }
@@ -35502,12 +35479,12 @@ async function getJobLog(octokit, job) {
     const failedSteps = job.steps?.filter(s => s.conclusion === 'failure');
     const logs = failedSteps?.map(s => {
         const sanitizedJobName = job.name.replaceAll('/', '');
-        const baseDir = path.join(process.cwd(), LOG_DIR);
-        const normalizedPath = path.normalize(path.join(process.cwd(), LOG_DIR, sanitizedJobName, `${s.number}_${s.name}.txt`));
+        const baseDir = path_1.default.join(process.cwd(), LOG_DIR);
+        const normalizedPath = path_1.default.normalize(path_1.default.join(process.cwd(), LOG_DIR, sanitizedJobName, `${s.number}_${s.name}.txt`));
         if (!normalizedPath.startsWith(baseDir)) {
             throw new Error('Invalid path');
         }
-        const logFile = fs.readFileSync(normalizedPath);
+        const logFile = fs_1.default.readFileSync(normalizedPath);
         return {
             log: formatLog(logFile.toString()),
             stepName: s.name
@@ -35606,7 +35583,7 @@ async function run() {
         }
         else {
             const summary = await (0, github_2.getSummary)(octokit, failedJobs);
-            const result = await (0, slack_1.notify)(webhookUrl, workflowRun, summary);
+            const result = await (0, slack_1.notify)(webhookUrl, (0, slack_1.generateParams)(workflowRun, summary));
             console.log(result);
         }
     }
@@ -35626,7 +35603,7 @@ exports.run = run;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.notify = exports.generateBlocks = void 0;
+exports.notify = exports.generateParams = exports.generateBlocks = void 0;
 const webhook_1 = __nccwpck_require__(1095);
 function generateBlocks(workflowRun) {
     const workflowName = workflowRun.name;
@@ -35728,9 +35705,8 @@ function generateBlocksInAttachment(summary) {
         ];
     });
 }
-async function notify(webhookUrl, workflowRun, summary) {
-    const webhook = new webhook_1.IncomingWebhook(webhookUrl);
-    return await webhook.send({
+function generateParams(workflowRun, summary) {
+    return {
         blocks: generateBlocks(workflowRun),
         attachments: [
             {
@@ -35738,7 +35714,12 @@ async function notify(webhookUrl, workflowRun, summary) {
                 blocks: generateBlocksInAttachment(summary)
             }
         ]
-    });
+    };
+}
+exports.generateParams = generateParams;
+async function notify(webhookUrl, params) {
+    const webhook = new webhook_1.IncomingWebhook(webhookUrl);
+    return await webhook.send(params);
 }
 exports.notify = notify;
 
