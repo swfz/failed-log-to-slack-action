@@ -2,6 +2,8 @@ import { http, HttpResponse } from 'msw'
 import workflowRun from './responses/workflow_run.json'
 import annotationDefault from './responses/check_run_annotation-default.json'
 import annotationMultiline from './responses/check_run_annotation-multiline.json'
+import fs from 'fs'
+import path from 'path'
 
 export const handlers = [
   http.get(
@@ -44,6 +46,18 @@ export const handlers = [
       return HttpResponse.json({ jobs })
     }
   ),
+  http.get('https://api.github.com/repos/*/*/actions/runs/*/logs', () => {
+    const buffer = fs.readFileSync(
+      path.resolve(process.cwd(), './src/mocks/responses/failed_log.zip')
+    )
+
+    return HttpResponse.arrayBuffer(buffer, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/zip'
+      }
+    })
+  }),
   http.get('https://api.github.com/repos/*/*/actions/runs/*', () => {
     return HttpResponse.json(workflowRun)
   }),
