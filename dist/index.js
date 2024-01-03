@@ -35573,19 +35573,17 @@ async function run() {
             core.getInput('slack-webhook-url', { required: true });
         core.setSecret(githubToken);
         core.setSecret(webhookUrl);
-        const octokit = (0, github_1.getOctokit)(githubToken);
+        const octokit = (0, github_1.getOctokit)(githubToken, { request: fetch });
         const workflowRun = await (0, github_2.getWorkflowRun)(octokit, runId);
         const failedJobs = await (0, github_2.getFailedJobs)(octokit, runId);
         await (0, github_2.getJobLogZip)(octokit, runId);
         if (failedJobs.length === 0) {
-            console.log('No failed jobs found.');
+            core.info('No failed jobs found.');
             return;
         }
-        else {
-            const summary = await (0, github_2.getSummary)(octokit, failedJobs);
-            const result = await (0, slack_1.notify)(webhookUrl, (0, slack_1.generateParams)(workflowRun, summary));
-            console.log(result);
-        }
+        const summary = await (0, github_2.getSummary)(octokit, failedJobs);
+        const result = await (0, slack_1.notify)(webhookUrl, (0, slack_1.generateParams)(workflowRun, summary));
+        core.info(JSON.stringify(result));
     }
     catch (error) {
         if (error instanceof Error)
