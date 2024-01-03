@@ -24,23 +24,23 @@ export async function run(): Promise<void> {
     core.setSecret(githubToken)
     core.setSecret(webhookUrl)
 
-    const octokit = getOctokit(githubToken)
+    const octokit = getOctokit(githubToken, { request: fetch })
     const workflowRun = await getWorkflowRun(octokit, runId)
     const failedJobs = await getFailedJobs(octokit, runId)
 
     await getJobLogZip(octokit, runId)
 
     if (failedJobs.length === 0) {
-      console.log('No failed jobs found.')
+      core.info('No failed jobs found.')
       return
-    } else {
-      const summary = await getSummary(octokit, failedJobs)
-      const result = await notify(
-        webhookUrl,
-        generateParams(workflowRun, summary)
-      )
-      console.log(result)
     }
+
+    const summary = await getSummary(octokit, failedJobs)
+    const result = await notify(
+      webhookUrl,
+      generateParams(workflowRun, summary)
+    )
+    core.info(JSON.stringify(result))
   } catch (error) {
     if (error instanceof Error) core.setFailed(error.message)
   }
