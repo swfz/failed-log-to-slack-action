@@ -70,7 +70,9 @@ describe('action', () => {
 
   it('run with failed jobs', async () => {
     const jobUrl = 'https://github.com/octocat/octocat/actions/runs/1/jobs/3'
+    const jobUrl2 = 'https://github.com/octocat/octocat/actions/runs/1/jobs/4'
     const stepName = 'test'
+    const stepName2 = 'typecheck'
     server.use(
       http.get('https://api.github.com/repos/*/*/actions/runs/*/jobs', () => {
         return HttpResponse.json({
@@ -83,6 +85,7 @@ describe('action', () => {
             },
             {
               run_id: 1,
+              id: 3,
               name: 'test',
               status: 'completed',
               conclusion: 'failure',
@@ -99,6 +102,33 @@ describe('action', () => {
                 },
                 {
                   name: stepName,
+                  number: 4,
+                  conclusion: 'failure',
+                  status: 'completed',
+                  completed_at: '2023-12-30T09:01:00Z',
+                  started_at: '2023-12-30T09:00:00Z'
+                }
+              ]
+            },
+            {
+              run_id: 1,
+              id: 4,
+              name: 'typecheck',
+              status: 'completed',
+              conclusion: 'failure',
+              number: 4,
+              html_url: jobUrl2,
+              steps: [
+                {
+                  name: 'Run actionsetup-node',
+                  number: 3,
+                  conclusion: 'success',
+                  status: 'completed',
+                  completed_at: '2023-12-30T09:01:00Z',
+                  started_at: '2023-12-30T09:00:00Z'
+                },
+                {
+                  name: stepName2,
                   number: 4,
                   conclusion: 'failure',
                   status: 'completed',
@@ -155,13 +185,34 @@ describe('action', () => {
               // after second line each steps:
               // 1. divider
               // 2. step name
-              // 3. annotations or log
+              // 3. annotations or log (n)
               { type: 'divider' },
               {
                 type: 'section',
                 text: {
                   type: 'mrkdwn',
                   text: expect.stringContaining(stepName)
+                }
+              },
+              {
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: expect.anything()
+                }
+              },
+              // job
+              {
+                type: 'section',
+                text: expect.anything()
+              },
+              // after second line
+              { type: 'divider' },
+              {
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: expect.stringContaining(stepName2)
                 }
               },
               {
