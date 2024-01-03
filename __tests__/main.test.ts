@@ -13,6 +13,7 @@ describe('action', () => {
     server.listen()
 
     jest.clearAllMocks()
+    jest.spyOn(core, 'getInput').mockImplementation(() => 'xxxxx')
     coreInfoMock = jest.spyOn(core, 'info').mockImplementation()
   })
   afterAll(() => {
