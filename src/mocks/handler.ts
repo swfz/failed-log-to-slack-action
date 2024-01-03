@@ -65,6 +65,6 @@ export const handlers = [
     return HttpResponse.json({ mocked: true })
   }),
   http.post('https://hooks.slack.com/*', () => {
-    return HttpResponse.json({ mocked: true })
+    return HttpResponse.text('ok')
   })
 ]

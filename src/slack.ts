@@ -121,7 +121,7 @@ export function generateParams(
   workflowRun: WorkflowRun,
   summary: Summary[]
 ): IncomingWebhookSendArguments {
-  return {
+  const params = {
     blocks: generateBlocks(workflowRun),
     attachments: [
       {
@@ -130,6 +130,8 @@ export function generateParams(
       }
     ]
   }
+
+  return params
 }
 
 export async function notify(
