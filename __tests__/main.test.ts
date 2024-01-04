@@ -88,7 +88,7 @@ describe('action', () => {
             },
             {
               run_id: 1,
-              id: 1,
+              id: 10,
               name: 'test',
               status: 'completed',
               conclusion: 'failure',
@@ -220,6 +220,23 @@ describe('action', () => {
                   text: expect.stringContaining('tests in hoge')
                 }
               },
+              { type: 'divider' },
+              // annotation location
+              {
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: expect.stringContaining('hoge.tsx: L50~L50')
+                }
+              },
+              // annotation message
+              {
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: expect.stringContaining('tests in hoge')
+                }
+              },
               // job name
               {
                 type: 'section',
@@ -243,7 +260,9 @@ describe('action', () => {
                 type: 'section',
                 text: {
                   type: 'mrkdwn',
-                  text: expect.stringContaining('Process completed with exit code')
+                  text: expect.stringContaining(
+                    'Process completed with exit code'
+                  )
                 }
               }
             ]

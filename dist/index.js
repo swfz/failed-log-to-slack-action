@@ -35505,8 +35505,6 @@ async function getJobAnnotations(octokit, jobId) {
         repo: github_1.context.repo.repo,
         check_run_id: jobId
     });
-    // console.log('-------------------------');
-    // console.log(data);
     const excludeDefaultErrorAnnotations = data.filter(a => !isDefaultErrorMessage(a));
     return excludeDefaultErrorAnnotations;
 }
@@ -35584,7 +35582,6 @@ async function run() {
             return;
         }
         const summary = await (0, github_2.getSummary)(octokit, failedJobs);
-        console.dir(summary, { depth: null });
         const result = await (0, slack_1.notify)(webhookUrl, (0, slack_1.generateParams)(workflowRun, summary));
         core.info(JSON.stringify(result));
     }

@@ -11,7 +11,15 @@ export const handlers = [
     ({ params }) => {
       // params[2]: check_run_id = job_id
       const annotations =
-        params[2] === '1' ? [annotationMultiline, annotationDefault] : []
+        params[2] === '1'
+          ? [annotationMultiline, annotationDefault]
+          : params[2] === '10'
+            ? [
+                annotationMultiline,
+                { ...annotationMultiline, start_line: 50, end_line: 50 },
+                annotationDefault
+              ]
+            : []
 
       return HttpResponse.json(annotations)
     }
