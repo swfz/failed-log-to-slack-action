@@ -149,6 +149,7 @@ export async function getSummary(
   const summary = jobs.reduce(
     async (acc, job) => {
       const annotations = await getJobAnnotations(octokit, job.id)
+
       if (annotations.length > 0) {
         return [...(await acc), { ...job, annotations }]
       } else {

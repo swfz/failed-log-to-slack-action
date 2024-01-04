@@ -9,9 +9,17 @@ export const handlers = [
   http.get(
     'https://api.github.com/repos/*/*/check-runs/*/annotations',
     ({ params }) => {
-      // params[2]: check_run_id
+      // params[2]: check_run_id = job_id
       const annotations =
-        params[2] === '1' ? [annotationMultiline, annotationDefault] : []
+        params[2] === '1'
+          ? [annotationMultiline, annotationDefault]
+          : params[2] === '10'
+            ? [
+                annotationMultiline,
+                { ...annotationMultiline, start_line: 50, end_line: 50 },
+                annotationDefault
+              ]
+            : []
 
       return HttpResponse.json(annotations)
     }
@@ -65,6 +73,6 @@ export const handlers = [
     return HttpResponse.json({ mocked: true })
   }),
   http.post('https://hooks.slack.com/*', () => {
-    return HttpResponse.json({ mocked: true })
+    return HttpResponse.text('ok')
   })
 ]

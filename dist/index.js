@@ -35704,7 +35704,7 @@ function generateBlocksInAttachment(summary) {
     });
 }
 function generateParams(workflowRun, summary) {
-    return {
+    const params = {
         blocks: generateBlocks(workflowRun),
         attachments: [
             {
@@ -35713,6 +35713,7 @@ function generateParams(workflowRun, summary) {
             }
         ]
     };
+    return params;
 }
 exports.generateParams = generateParams;
 async function notify(webhookUrl, params) {
