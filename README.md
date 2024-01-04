@@ -1,10 +1,18 @@
 # Create a GitHub Action Using TypeScript
 
-[![GitHub Super-Linter](https://github.com/actions/failed-log-slack-action/actions/workflows/linter.yml/badge.svg)](https://github.com/super-linter/super-linter)
-![CI](https://github.com/actions/failed-log-slack-action/actions/workflows/ci.yml/badge.svg)
-[![Check dist/](https://github.com/actions/failed-log-slack-action/actions/workflows/check-dist.yml/badge.svg)](https://github.com/actions/failed-log-slack-action/actions/workflows/check-dist.yml)
-[![CodeQL](https://github.com/actions/failed-log-slack-action/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/actions/failed-log-slack-action/actions/workflows/codeql-analysis.yml)
 [![Coverage](./badges/coverage.svg)](./badges/coverage.svg)
+
+Custom action to notify Slack of the contents of the failure log or
+
+annotation when an Actions workflow fails.
+
+## Example
+
+![alt](images/screenshot1.png)
+
+- `See more` clicked
+
+![alt](images/screenshot2.png)
 
 ## Usage
 
@@ -28,7 +36,7 @@ jobs:
     name: post slack
     runs-on: ubuntu-latest
     steps:
-      - uses: swfz/failed-log-to-slack-action@v0
+      - uses: swfz/failed-log-to-slack-action@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
@@ -53,7 +61,7 @@ jobs:
     name: main
     runs-on: ubuntu-latest
     steps:
-      - uses: swfz/failed-log-to-slack-action@v0
+      - uses: swfz/failed-log-to-slack-action@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
