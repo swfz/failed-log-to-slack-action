@@ -71,6 +71,8 @@ describe('action', () => {
   it('run with failed jobs', async () => {
     const jobUrl = 'https://github.com/octocat/octocat/actions/runs/1/jobs/3'
     const jobUrl2 = 'https://github.com/octocat/octocat/actions/runs/1/jobs/4'
+    const jobName = 'test'
+    const jobName2 = 'typecheck'
     const stepName = 'test'
     const stepName2 = 'typecheck'
     server.use(
@@ -79,13 +81,14 @@ describe('action', () => {
           jobs: [
             {
               run_id: 1,
+              id: 2,
               name: 'job1',
               status: 'completed',
               conclusion: 'success'
             },
             {
               run_id: 1,
-              id: 3,
+              id: 1,
               name: 'test',
               status: 'completed',
               conclusion: 'failure',
@@ -145,6 +148,21 @@ describe('action', () => {
     await main.run()
 
     expect(coreInfoMock).toHaveBeenNthCalledWith(1, '{"text":"ok"}')
+
+    // NOTE: parameter specific
+    // attachments.blocks
+    // 1. job name(link) and conclusion
+    // repeat Annotation pattern or Log pattern
+    // ------
+    // Annotation pattern
+    // 1. divider
+    // 2. annotation location
+    // 3. annotation message
+    // ------
+    // Log pattern
+    // 1. divider
+    // 2. step name
+    // 3. job log
     expect(webhookSendMock).toHaveBeenCalledWith(
       expect.objectContaining({
         blocks: [
@@ -176,38 +194,43 @@ describe('action', () => {
           {
             color: '#a30200',
             blocks: [
-              // job and annotations,logs each failed jobs
-              // first line: job name(link) and conclusion
-              {
-                type: 'section',
-                text: expect.anything()
-              },
-              // after second line each steps:
-              // 1. divider
-              // 2. step name
-              // 3. annotations or log (n)
-              { type: 'divider' },
+              // job name
               {
                 type: 'section',
                 text: {
                   type: 'mrkdwn',
-                  text: expect.stringContaining(stepName)
+                  text: expect.stringContaining(jobName)
                 }
               },
+              // annotation pattern
+              { type: 'divider' },
+              // annotation location
               {
                 type: 'section',
                 text: {
                   type: 'mrkdwn',
-                  text: expect.anything()
+                  text: expect.stringContaining('hoge.tsx: L100~L100')
                 }
               },
-              // job
+              // annotation message
               {
                 type: 'section',
-                text: expect.anything()
+                text: {
+                  type: 'mrkdwn',
+                  text: expect.stringContaining('tests in hoge')
+                }
               },
-              // after second line
+              // job name
+              {
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: expect.stringContaining(jobName2)
+                }
+              },
+              // log pattern
               { type: 'divider' },
+              // log failed step name
               {
                 type: 'section',
                 text: {
@@ -215,11 +238,12 @@ describe('action', () => {
                   text: expect.stringContaining(stepName2)
                 }
               },
+              // log last 30 lines
               {
                 type: 'section',
                 text: {
                   type: 'mrkdwn',
-                  text: expect.anything()
+                  text: expect.stringContaining('Process completed with exit code')
                 }
               }
             ]
