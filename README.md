@@ -2,7 +2,9 @@
 
 [![Coverage](./badges/coverage.svg)](./badges/coverage.svg)
 
-Custom action to notify Slack of the contents of the failure log or annotation when an Actions workflow fails.
+Custom action to notify Slack of the contents of the failure log or
+
+annotation when an Actions workflow fails.
 
 ## Example
 
