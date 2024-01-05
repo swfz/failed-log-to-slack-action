@@ -1,3 +1,4 @@
+import * as core from '@actions/core'
 import { context, getOctokit } from '@actions/github'
 // TODO: workaround
 // eslint-disable-next-line import/no-unresolved
@@ -38,6 +39,7 @@ export async function getWorkflowRun(
     repo: context.repo.repo,
     run_id: runId
   })
+  core.debug('fetched workflow run')
 
   return data
 }
@@ -51,6 +53,7 @@ export async function getFailedJobs(
     repo: context.repo.repo,
     run_id: runId
   })
+  core.debug('fetched jobs for workflow run')
 
   const completedJobs = data.jobs.filter(j => j.status === 'completed')
   const failedJobs = completedJobs.filter(j => j.conclusion === 'failure')
@@ -65,6 +68,7 @@ export async function getJobLogZip(
   const res = await octokit.request(
     `GET /repos/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}/logs`
   )
+  core.debug('fetched run logs')
 
   const extractedDir = path.join(process.cwd(), LOG_DIR)
   const zipFilePath = path.join(process.cwd(), LOG_ZIP_FILE)
@@ -134,6 +138,7 @@ export async function getJobAnnotations(
     repo: context.repo.repo,
     check_run_id: jobId
   })
+  core.debug('fetched annotations')
 
   const excludeDefaultErrorAnnotations = data.filter(
     a => !isDefaultErrorMessage(a)
