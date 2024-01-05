@@ -35602,11 +35602,9 @@ const github_2 = __nccwpck_require__(978);
 async function run() {
     try {
         const fromWorkflowRun = github_1.context.eventName === 'workflow_run';
-        console.log(fromWorkflowRun);
         const runId = fromWorkflowRun
             ? parseInt(github_1.context.payload.workflow_run.id)
             : github_1.context.runId;
-        console.log(runId);
         core.debug(`event: ${github_1.context.eventName}`);
         core.debug(`runId: ${runId}`);
         const githubToken = process.env.INPUT_GITHUB_TOKEN ||
