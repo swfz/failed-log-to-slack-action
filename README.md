@@ -73,9 +73,13 @@ jobs:
           slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
 ```
 
-If this Action is called in the same workflow configuration while the log file is being acquired, the log file generation does not finish because the workflow is still running.
+If this Action is called in the same workflow configuration while the log file is being acquired,
 
-Therefore, the information obtained is less than that of the notification processed via `workflow_run` because the information in the log file cannot be obtained.
+the log file generation does not finish because the workflow is still running.
+
+Therefore, the information obtained is less than that of the notification processed via `workflow_run`
+
+because the information in the log file cannot be obtained.
 
 </details>
 <!-- markdownlint-enable MD033 -->
