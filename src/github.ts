@@ -1,3 +1,4 @@
+import * as core from '@actions/core'
 import { context, getOctokit } from '@actions/github'
 // TODO: workaround
 // eslint-disable-next-line import/no-unresolved
@@ -38,6 +39,7 @@ export async function getWorkflowRun(
     repo: context.repo.repo,
     run_id: runId
   })
+  core.debug('fetched workflow run')
 
   return data
 }
@@ -51,6 +53,7 @@ export async function getFailedJobs(
     repo: context.repo.repo,
     run_id: runId
   })
+  core.debug('fetched jobs for workflow run')
 
   const completedJobs = data.jobs.filter(j => j.status === 'completed')
   const failedJobs = completedJobs.filter(j => j.conclusion === 'failure')
@@ -65,6 +68,7 @@ export async function getJobLogZip(
   const res = await octokit.request(
     `GET /repos/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}/logs`
   )
+  core.debug('fetched run logs')
 
   const extractedDir = path.join(process.cwd(), LOG_DIR)
   const zipFilePath = path.join(process.cwd(), LOG_ZIP_FILE)
@@ -113,6 +117,7 @@ export async function getJobLog(
       stepName: s.name
     }
   })
+  core.debug('get log from logfile')
 
   return logs || []
 }
@@ -134,9 +139,13 @@ export async function getJobAnnotations(
     repo: context.repo.repo,
     check_run_id: jobId
   })
+  core.debug('fetched annotations')
 
   const excludeDefaultErrorAnnotations = data.filter(
     a => !isDefaultErrorMessage(a)
+  )
+  core.debug(
+    `exclude default error annotations: ${excludeDefaultErrorAnnotations.length}`
   )
 
   return excludeDefaultErrorAnnotations
@@ -146,14 +155,18 @@ export async function getSummary(
   octokit: Octokit,
   jobs: Jobs
 ): Promise<Summary[]> {
+  core.debug(`jobs: ${jobs.length}`)
+
   const summary = jobs.reduce(
     async (acc, job) => {
       const annotations = await getJobAnnotations(octokit, job.id)
 
       if (annotations.length > 0) {
+        core.debug(`jobId: ${job.id}, annotations: ${annotations.length}`)
         return [...(await acc), { ...job, annotations }]
       } else {
         const jobLog = await getJobLog(octokit, job)
+        core.debug(`jobId: ${job.id}, log: ${jobLog.length}`)
         return [...(await acc), { ...job, jobLog }]
       }
     },

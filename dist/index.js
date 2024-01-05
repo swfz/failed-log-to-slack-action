@@ -35424,11 +35424,35 @@ function wrappy (fn, cb) {
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getSummary = exports.getJobAnnotations = exports.isDefaultErrorMessage = exports.getJobLog = exports.formatLog = exports.getJobLogZip = exports.getFailedJobs = exports.getWorkflowRun = void 0;
+const core = __importStar(__nccwpck_require__(2186));
 const github_1 = __nccwpck_require__(5438);
 const fs_1 = __importDefault(__nccwpck_require__(7147));
 const path_1 = __importDefault(__nccwpck_require__(1017));
@@ -35442,6 +35466,7 @@ async function getWorkflowRun(octokit, runId) {
         repo: github_1.context.repo.repo,
         run_id: runId
     });
+    core.debug('fetched workflow run');
     return data;
 }
 exports.getWorkflowRun = getWorkflowRun;
@@ -35451,6 +35476,7 @@ async function getFailedJobs(octokit, runId) {
         repo: github_1.context.repo.repo,
         run_id: runId
     });
+    core.debug('fetched jobs for workflow run');
     const completedJobs = data.jobs.filter(j => j.status === 'completed');
     const failedJobs = completedJobs.filter(j => j.conclusion === 'failure');
     return failedJobs || [];
@@ -35458,6 +35484,7 @@ async function getFailedJobs(octokit, runId) {
 exports.getFailedJobs = getFailedJobs;
 async function getJobLogZip(octokit, runId) {
     const res = await octokit.request(`GET /repos/${github_1.context.repo.owner}/${github_1.context.repo.repo}/actions/runs/${runId}/logs`);
+    core.debug('fetched run logs');
     const extractedDir = path_1.default.join(process.cwd(), LOG_DIR);
     const zipFilePath = path_1.default.join(process.cwd(), LOG_ZIP_FILE);
     fs_1.default.writeFileSync(zipFilePath, Buffer.from(res.data));
@@ -35490,6 +35517,7 @@ async function getJobLog(octokit, job) {
             stepName: s.name
         };
     });
+    core.debug('get log from logfile');
     return logs || [];
 }
 exports.getJobLog = getJobLog;
@@ -35505,18 +35533,23 @@ async function getJobAnnotations(octokit, jobId) {
         repo: github_1.context.repo.repo,
         check_run_id: jobId
     });
+    core.debug('fetched annotations');
     const excludeDefaultErrorAnnotations = data.filter(a => !isDefaultErrorMessage(a));
+    core.debug(`exclude default error annotations: ${excludeDefaultErrorAnnotations.length}`);
     return excludeDefaultErrorAnnotations;
 }
 exports.getJobAnnotations = getJobAnnotations;
 async function getSummary(octokit, jobs) {
+    core.debug(`jobs: ${jobs.length}`);
     const summary = jobs.reduce(async (acc, job) => {
         const annotations = await getJobAnnotations(octokit, job.id);
         if (annotations.length > 0) {
+            core.debug(`jobId: ${job.id}, annotations: ${annotations.length}`);
             return [...(await acc), { ...job, annotations }];
         }
         else {
             const jobLog = await getJobLog(octokit, job);
+            core.debug(`jobId: ${job.id}, log: ${jobLog.length}`);
             return [...(await acc), { ...job, jobLog }];
         }
     }, Promise.resolve([]));
@@ -35567,6 +35600,8 @@ async function run() {
         const runId = fromWorkflowRun
             ? parseInt(github_1.context.payload.workflow_run.id)
             : github_1.context.runId;
+        core.debug(`event: ${github_1.context.eventName}`);
+        core.debug(`runId: ${runId}`);
         const githubToken = process.env.INPUT_GITHUB_TOKEN ||
             core.getInput('github-token', { required: true });
         const webhookUrl = process.env.SLACK_WEBHOOK_URL ||

@@ -15,6 +15,9 @@ export async function run(): Promise<void> {
       ? parseInt(context.payload.workflow_run.id)
       : context.runId
 
+    core.debug(`event: ${context.eventName}`)
+    core.debug(`runId: ${runId}`)
+
     const githubToken =
       process.env.INPUT_GITHUB_TOKEN ||
       core.getInput('github-token', { required: true })
