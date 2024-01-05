@@ -128,7 +128,7 @@ line31
 
     const jobs = runJobs.jobs as Jobs
 
-    const stepLogs = await getJobLog(octokit, {
+    const stepLogs = await getJobLog({
       ...jobs[0],
       name: 'test',
       steps: [
