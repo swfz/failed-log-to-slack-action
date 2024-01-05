@@ -35,7 +35,7 @@ jobs:
     name: main
     runs-on: ubuntu-latest
     steps:
-      - uses: swfz/failed-log-to-slack-action@v1.0.0
+      - uses: swfz/failed-log-to-slack-action@v1.1.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
@@ -67,7 +67,7 @@ jobs:
     name: post slack
     runs-on: ubuntu-latest
     steps:
-      - uses: swfz/failed-log-to-slack-action@v1.0.0
+      - uses: swfz/failed-log-to-slack-action@v1.1.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
