@@ -117,6 +117,7 @@ export async function getJobLog(
       stepName: s.name
     }
   })
+  core.debug('get log from logfile')
 
   return logs || []
 }
@@ -143,6 +144,9 @@ export async function getJobAnnotations(
   const excludeDefaultErrorAnnotations = data.filter(
     a => !isDefaultErrorMessage(a)
   )
+  core.debug(
+    `exclude default error annotations: ${excludeDefaultErrorAnnotations.length}`
+  )
 
   return excludeDefaultErrorAnnotations
 }
@@ -151,14 +155,18 @@ export async function getSummary(
   octokit: Octokit,
   jobs: Jobs
 ): Promise<Summary[]> {
+  core.debug(`jobs: ${jobs.length}`)
+
   const summary = jobs.reduce(
     async (acc, job) => {
       const annotations = await getJobAnnotations(octokit, job.id)
 
       if (annotations.length > 0) {
+        core.debug(`jobId: ${job.id}, annotations: ${annotations.length}`)
         return [...(await acc), { ...job, annotations }]
       } else {
         const jobLog = await getJobLog(octokit, job)
+        core.debug(`jobId: ${job.id}, log: ${jobLog.length}`)
         return [...(await acc), { ...job, jobLog }]
       }
     },
