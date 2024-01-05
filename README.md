@@ -16,32 +16,6 @@ annotation when an Actions workflow fails.
 
 ## Usage
 
-### call by workflow configuration
-
-- .github/workflows/xxxxx.yml
-
-```yaml
-name: ci
-
-on: [push]
-
-jobs:
-  test:
-  .....
-  .....
-
-  slack-notify:
-    if: always()
-    needs: [test]
-    name: post slack
-    runs-on: ubuntu-latest
-    steps:
-      - uses: swfz/failed-log-to-slack-action@v1.0.0
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
-```
-
 ### call by workflow_run trigger
 
 - .github/workflows/slack.yml
@@ -70,6 +44,41 @@ jobs:
 `ci`,`analysis` is other workflow name
 
 run this workflow is there workflow completed
+
+<!-- markdownlint-disable MD033 -->
+<details>
+  <summary>[deprecated] call by workflow configuration</summary>
+
+- .github/workflows/xxxxx.yml
+
+```yaml
+name: ci
+
+on: [push]
+
+jobs:
+  test:
+  .....
+  .....
+
+  slack-notify:
+    if: always()
+    needs: [test]
+    name: post slack
+    runs-on: ubuntu-latest
+    steps:
+      - uses: swfz/failed-log-to-slack-action@v1.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+```
+
+If this Action is called in the same workflow configuration while the log file is being acquired, the log file generation does not finish because the workflow is still running.
+
+Therefore, the information obtained is less than that of the notification processed via `workflow_run` because the information in the log file cannot be obtained.
+
+</details>
+<!-- markdownlint-enable MD033 -->
 
 ## Development
 
