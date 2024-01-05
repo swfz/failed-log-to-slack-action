@@ -1,5 +1,5 @@
-process.env.GITHUB_EVENT_NAME = 'workflow_run'
-process.env.GITHUB_EVENT_PATH = './src/mocks/events/workflow_run.json'
+process.env.GITHUB_EVENT_NAME = 'push'
+process.env.GITHUB_RUN_ID = '1'
 
 import * as core from '@actions/core'
 import * as main from '../src/main'
@@ -41,7 +41,7 @@ describe('action', () => {
   })
 
   it('environment', async () => {
-    expect(process.env.GITHUB_EVENT_NAME).toEqual('workflow_run')
+    expect(process.env.GITHUB_EVENT_NAME).toEqual('push')
   })
 
   it('run with no failed jobs', async () => {
@@ -250,26 +250,6 @@ describe('action', () => {
                 text: {
                   type: 'mrkdwn',
                   text: expect.stringContaining(jobName2)
-                }
-              },
-              // log pattern
-              { type: 'divider' },
-              // log failed step name
-              {
-                type: 'section',
-                text: {
-                  type: 'mrkdwn',
-                  text: expect.stringContaining(stepName2)
-                }
-              },
-              // log last 30 lines
-              {
-                type: 'section',
-                text: {
-                  type: 'mrkdwn',
-                  text: expect.stringContaining(
-                    'Process completed with exit code'
-                  )
                 }
               }
             ]

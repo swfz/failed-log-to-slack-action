@@ -35502,7 +35502,7 @@ function formatLog(log) {
         .join('\n');
 }
 exports.formatLog = formatLog;
-async function getJobLog(octokit, job) {
+async function getJobLog(job) {
     const failedSteps = job.steps?.filter(s => s.conclusion === 'failure');
     const logs = failedSteps?.map(s => {
         const sanitizedJobName = job.name.replaceAll('/', '');
@@ -35539,19 +35539,24 @@ async function getJobAnnotations(octokit, jobId) {
     return excludeDefaultErrorAnnotations;
 }
 exports.getJobAnnotations = getJobAnnotations;
-async function getSummary(octokit, jobs) {
+async function getSummary(octokit, fromWorkflowRun, jobs) {
     core.debug(`jobs: ${jobs.length}`);
     const summary = jobs.reduce(async (acc, job) => {
         const annotations = await getJobAnnotations(octokit, job.id);
+        if (fromWorkflowRun) {
+            if (annotations.length > 0) {
+                core.debug(`jobId: ${job.id}, annotations: ${annotations.length}`);
+                return [...(await acc), { ...job, annotations }];
+            }
+            const jobLog = await getJobLog(job);
+            core.debug(`jobId: ${job.id}, log: ${jobLog.length}`);
+            return [...(await acc), { ...job, jobLog }];
+        }
         if (annotations.length > 0) {
             core.debug(`jobId: ${job.id}, annotations: ${annotations.length}`);
             return [...(await acc), { ...job, annotations }];
         }
-        else {
-            const jobLog = await getJobLog(octokit, job);
-            core.debug(`jobId: ${job.id}, log: ${jobLog.length}`);
-            return [...(await acc), { ...job, jobLog }];
-        }
+        return [...(await acc), { ...job }];
     }, Promise.resolve([]));
     return summary;
 }
@@ -35611,12 +35616,16 @@ async function run() {
         const octokit = (0, github_1.getOctokit)(githubToken, { request: fetch });
         const workflowRun = await (0, github_2.getWorkflowRun)(octokit, runId);
         const failedJobs = await (0, github_2.getFailedJobs)(octokit, runId);
-        await (0, github_2.getJobLogZip)(octokit, runId);
         if (failedJobs.length === 0) {
             core.info('No failed jobs found.');
             return;
         }
-        const summary = await (0, github_2.getSummary)(octokit, failedJobs);
+        // Except for the `workflow_run` event, the current log is being processed,
+        // so a request to the log file endpoint will result in a `not found` error.
+        if (fromWorkflowRun) {
+            await (0, github_2.getJobLogZip)(octokit, runId);
+        }
+        const summary = await (0, github_2.getSummary)(octokit, fromWorkflowRun, failedJobs);
         const result = await (0, slack_1.notify)(webhookUrl, (0, slack_1.generateParams)(workflowRun, summary));
         core.info(JSON.stringify(result));
     }

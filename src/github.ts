@@ -88,10 +88,7 @@ export function formatLog(log: string): string {
     .join('\n')
 }
 
-export async function getJobLog(
-  octokit: Octokit,
-  job: Jobs[0]
-): Promise<StepLog[]> {
+export async function getJobLog(job: Jobs[0]): Promise<StepLog[]> {
   const failedSteps = job.steps?.filter(s => s.conclusion === 'failure')
   const logs = failedSteps?.map(s => {
     const sanitizedJobName = job.name.replaceAll('/', '')
@@ -153,6 +150,7 @@ export async function getJobAnnotations(
 
 export async function getSummary(
   octokit: Octokit,
+  fromWorkflowRun: boolean,
   jobs: Jobs
 ): Promise<Summary[]> {
   core.debug(`jobs: ${jobs.length}`)
@@ -161,14 +159,22 @@ export async function getSummary(
     async (acc, job) => {
       const annotations = await getJobAnnotations(octokit, job.id)
 
-      if (annotations.length > 0) {
-        core.debug(`jobId: ${job.id}, annotations: ${annotations.length}`)
-        return [...(await acc), { ...job, annotations }]
-      } else {
-        const jobLog = await getJobLog(octokit, job)
+      if (fromWorkflowRun) {
+        if (annotations.length > 0) {
+          core.debug(`jobId: ${job.id}, annotations: ${annotations.length}`)
+          return [...(await acc), { ...job, annotations }]
+        }
+        const jobLog = await getJobLog(job)
         core.debug(`jobId: ${job.id}, log: ${jobLog.length}`)
         return [...(await acc), { ...job, jobLog }]
       }
+
+      if (annotations.length > 0) {
+        core.debug(`jobId: ${job.id}, annotations: ${annotations.length}`)
+        return [...(await acc), { ...job, annotations }]
+      }
+
+      return [...(await acc), { ...job }]
     },
     Promise.resolve([] as Summary[])
   )

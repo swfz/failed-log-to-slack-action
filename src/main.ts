@@ -31,14 +31,18 @@ export async function run(): Promise<void> {
     const workflowRun = await getWorkflowRun(octokit, runId)
     const failedJobs = await getFailedJobs(octokit, runId)
 
-    await getJobLogZip(octokit, runId)
-
     if (failedJobs.length === 0) {
       core.info('No failed jobs found.')
       return
     }
 
-    const summary = await getSummary(octokit, failedJobs)
+    // Except for the `workflow_run` event, the current log is being processed,
+    // so a request to the log file endpoint will result in a `not found` error.
+    if (fromWorkflowRun) {
+      await getJobLogZip(octokit, runId)
+    }
+
+    const summary = await getSummary(octokit, fromWorkflowRun, failedJobs)
     const result = await notify(
       webhookUrl,
       generateParams(workflowRun, summary)

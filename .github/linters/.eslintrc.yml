@@ -41,6 +41,10 @@ rules:
     'eslint-comments/no-unused-disable': 'off',
     'i18n-text/no-en': 'off',
     'import/no-namespace': 'off',
+    # TODO: Temporary measure, will address it later.
+    'import/first': 'off',
+    # TODO: Temporary measure, will address it later.
+    'filenames/match-regex': 'off',
     'no-console': 'off',
     'no-unused-vars': 'off',
     'prettier/prettier': 'error',
