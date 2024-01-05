@@ -31,11 +31,13 @@ export async function run(): Promise<void> {
     const workflowRun = await getWorkflowRun(octokit, runId)
     const failedJobs = await getFailedJobs(octokit, runId)
 
-    await getJobLogZip(octokit, runId)
-
     if (failedJobs.length === 0) {
       core.info('No failed jobs found.')
       return
+    }
+
+    if (fromWorkflowRun) {
+      await getJobLogZip(octokit, runId)
     }
 
     const summary = await getSummary(octokit, failedJobs)
