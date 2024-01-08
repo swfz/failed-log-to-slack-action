@@ -2,7 +2,6 @@ process.env.GITHUB_EVENT_NAME = 'workflow_run'
 process.env.GITHUB_EVENT_PATH = './src/mocks/events/workflow_run.json'
 
 import * as core from '@actions/core'
-import * as main from '../src/main'
 import { setupServer } from 'msw/node'
 import { handlers } from '../src/mocks/handler'
 import { HttpResponse, http } from 'msw'
@@ -12,9 +11,19 @@ const server = setupServer(...handlers)
 
 let coreInfoMock: jest.SpyInstance
 let webhookSendMock: jest.SpyInstance
+// eslint-disable-next-line no-undef
+let originEnv: NodeJS.ProcessEnv
 
-describe('action', () => {
-  beforeEach(() => {
+describe('run from workflow_run event', () => {
+  beforeEach(async () => {
+    originEnv = process.env
+    process.env = {
+      ...originEnv,
+      GITHUB_EVENT_NAME: 'workflow_run',
+      GITHUB_EVENT_PATH: './src/mocks/events/workflow_run.json',
+      GITHUB_REPOSITORY: 'swfz/failed-log-to-slack-action'
+    }
+
     server.listen()
 
     jest.clearAllMocks()
@@ -37,7 +46,9 @@ describe('action', () => {
       )
   })
   afterAll(() => {
+    process.env = originEnv
     server.close()
+    jest.resetModules()
   })
 
   it('environment', async () => {
@@ -45,6 +56,7 @@ describe('action', () => {
   })
 
   it('run with no failed jobs', async () => {
+    const main = await import('../src/main')
     server.use(
       http.get('https://api.github.com/repos/*/*/actions/runs/*/jobs', () => {
         return HttpResponse.json({
@@ -76,6 +88,8 @@ describe('action', () => {
   })
 
   it('run with failed jobs', async () => {
+    const main = await import('../src/main')
+
     const jobUrl = 'https://github.com/octocat/octocat/actions/runs/1/jobs/3'
     const jobUrl2 = 'https://github.com/octocat/octocat/actions/runs/1/jobs/4'
     const jobName = 'test'
