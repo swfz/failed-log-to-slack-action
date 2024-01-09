@@ -30,10 +30,11 @@
     "format:write": "prettier --write **/*.ts",
     "format:check": "prettier --check **/*.ts",
     "lint": "npx eslint . -c ./.github/linters/.eslintrc.yml",
+    "md-lint": "npx markdownlint . -c ./.github/linters/.markdown-lint.yml -i node_modules",
     "package": "ncc build src/index.ts --license licenses.txt",
     "package:watch": "npm run package -- --watch",
     "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
-    "all": "npm run format:write && npm run lint && npm run test && npm run coverage && npm run package"
+    "all": "npm run format:write && npm run lint && npm run test && npm run coverage && npm run package && npm run md-lint"
   },
   "license": "MIT",
   "jest": {
