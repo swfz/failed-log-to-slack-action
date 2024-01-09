@@ -14,13 +14,23 @@ import runJobs from '../src/mocks/responses/runs_jobs.json'
 
 import fs from 'fs'
 
+// eslint-disable-next-line no-undef
+let originEnv: NodeJS.ProcessEnv
+
 const server = setupServer(...handlers)
 
 describe('github', () => {
   beforeEach(() => {
+    originEnv = process.env
+    process.env = {
+      ...originEnv,
+      GITHUB_REPOSITORY: 'swfz/failed-log-to-slack-action'
+    }
+
     server.listen()
   })
   afterAll(() => {
+    process.env = originEnv
     server.close()
   })
   const octokit = getOctokit('dummy', { request: fetch })
