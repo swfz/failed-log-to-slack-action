@@ -1,4 +1,4 @@
-# Create a GitHub Action Using TypeScript
+# failed-log-to-slack-action
 
 [![Coverage](./badges/coverage.svg)](./badges/coverage.svg)
 
