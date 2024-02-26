@@ -77,11 +77,11 @@
     "adm-zip": "^0.5.10"
   },
   "devDependencies": {
-    "@octokit/types": "^12.5.0",
+    "@octokit/types": "^12.6.0",
     "@slack/types": "^2.11.0",
     "@types/adm-zip": "^0.5.5",
     "@types/jest": "^29.5.11",
-    "@types/node": "^20.11.19",
+    "@types/node": "^20.11.20",
     "@typescript-eslint/eslint-plugin": "^6.16.0",
     "@typescript-eslint/parser": "^6.16.0",
     "@vercel/ncc": "^0.38.1",
