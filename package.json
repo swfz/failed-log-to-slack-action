@@ -77,7 +77,7 @@
     "adm-zip": "^0.5.10"
   },
   "devDependencies": {
-    "@octokit/types": "^12.5.0",
+    "@octokit/types": "^13.0.0",
     "@slack/types": "^2.11.0",
     "@types/adm-zip": "^0.5.5",
     "@types/jest": "^29.5.11",
