@@ -19,10 +19,10 @@ jobs:
     permissions:
       contents: write
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       with:
         fetch-depth: 0
-    - uses: GitHubSecurityLab/actions-permissions/monitor@v1
+    - uses: GitHubSecurityLab/actions-permissions/monitor@bf82d13b9b10051d224345ab9184f5ede0a94289 # v1
       with:
         config: ${{ vars.PERMISSIONS_CONFIG }}
     - name: Git config
